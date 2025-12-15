@@ -1,0 +1,18 @@
+# === Django Core ===
+Django==4.2.7
+django-environ==0.10.0
+django-cors-headers==4.3.0
+djangorestframework==3.14.0
+djangorestframework-simplejwt==5.3.1
+
+# === Vector Database (임베딩 검색) ===
+chromadb==0.4.22              # Chroma 벡터DB
+
+# === API 요청 (외부 정책 API / 네이버 블로그 등) ===
+requests==2.31.0
+
+# === Serialization / Parsing ===
+ujson==5.8.0
+
+# === Security ===
+cryptography==41.0.7
