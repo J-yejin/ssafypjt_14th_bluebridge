@@ -33,6 +33,7 @@ ALLOWED_HOSTS = []
 INSTALLED_APPS = [
     # local apps
     'accounts',
+    'profiles',
 
     # third-party
     'rest_framework',
