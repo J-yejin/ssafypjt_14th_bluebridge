@@ -34,7 +34,7 @@ INSTALLED_APPS = [
     # local apps
     'accounts',
     'profiles',
-
+    'policies',
     # third-party
     'rest_framework',
 
