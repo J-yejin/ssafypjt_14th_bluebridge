@@ -1,7 +1,7 @@
 from rest_framework import serializers
 from policies.models import Policy
 
-
+# 정책 모델 serializer
 class PolicySerializer(serializers.ModelSerializer):
     class Meta:
         model = Policy
@@ -43,4 +43,19 @@ class PolicySerializer(serializers.ModelSerializer):
 
             # 상태
             "status",
+        ]
+
+
+# 정책 검색용 serialzier
+class PolicyListSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Policy
+        fields = [
+            "id",
+            "title",
+            "summary",
+            "source_type",
+            "region",
+            "category",
+            "end_date",
         ]
