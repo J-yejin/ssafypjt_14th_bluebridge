@@ -1,7 +1,7 @@
 from django.urls import path
-from .views import policy_list, policy_detail
+from policies import views
 
 urlpatterns = [
-    path('', policy_list),                 # 목록
-    path('<int:policy_id>/', policy_detail),  # 상세
+    path("", views.policy_list, name="policy-list"),
+    path("<int:id>/", views.policy_detail, name="policy-detail"),
 ]

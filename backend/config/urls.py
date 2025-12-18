@@ -21,5 +21,5 @@ urlpatterns = [
     path('admin/', admin.site.urls),
     path('bluebridge/auth/', include('accounts.urls')),
     path('bluebridge/profile/', include('profiles.urls')),
-    path('bluebridge/policy/', include('policies.urls')),
+    path('bluebridge/policies/', include('policies.urls')),
 ]
