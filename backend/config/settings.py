@@ -35,6 +35,7 @@ INSTALLED_APPS = [
     'accounts',
     'profiles',
     'policies',
+    'boards',
     # third-party
     'rest_framework',
 
