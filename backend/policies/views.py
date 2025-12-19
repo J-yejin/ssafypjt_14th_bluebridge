@@ -2,13 +2,15 @@ from django.shortcuts import render
 
 # Create your views here.
 import random
-from rest_framework.decorators import api_view
+from rest_framework.decorators import api_view, permission_classes
 from rest_framework.response import Response
 from django.db.models import Q
 from rest_framework.pagination import PageNumberPagination
+from rest_framework.permissions import IsAuthenticated
+from django.shortcuts import get_object_or_404
 
-from .models import Policy
-from .serializers import PolicySerializer
+from .models import Policy, Wishlist
+from .serializers import PolicySerializer, WishlistCreateSerializer, WishlistItemSerializer
 
 # 정책 리스트 조회 : 초기 화면 - 랜덤으로 20개 보여줌
 @api_view(["GET"])
@@ -104,3 +106,38 @@ def policy_search(request):
 
     serializer = PolicySerializer(page, many=True)
     return paginator.get_paginated_response(serializer.data)
+
+
+@api_view(["GET", "POST"])
+@permission_classes([IsAuthenticated])
+def wishlist_list_create(request):
+    if request.method == "POST":
+        serializer = WishlistCreateSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        policy = serializer.validated_data["policy"]
+
+        wishlist, created = Wishlist.objects.get_or_create(
+            user=request.user,
+            policy=policy,
+        )
+        if not created:
+            return Response({"detail": "Already wishlisted"}, status=400)
+
+        output = WishlistItemSerializer(wishlist)
+        return Response(output.data, status=201)
+
+    qs = Wishlist.objects.filter(user=request.user).select_related("policy")
+    serializer = WishlistItemSerializer(qs, many=True)
+    return Response(serializer.data)
+
+
+@api_view(["DELETE"])
+@permission_classes([IsAuthenticated])
+def wishlist_delete(request, policy_id):
+    wishlist = get_object_or_404(
+        Wishlist,
+        user=request.user,
+        policy_id=policy_id,
+    )
+    wishlist.delete()
+    return Response(status=204)

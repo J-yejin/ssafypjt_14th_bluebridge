@@ -23,4 +23,5 @@ urlpatterns = [
     path('bluebridge/profile/', include('profiles.urls')),
     path('bluebridge/policies/', include('policies.urls')),
     path('api/v1/boards/', include('boards.urls')),
+    path('api/v1/wishlist/', include('policies.wishlist_urls')),
 ]

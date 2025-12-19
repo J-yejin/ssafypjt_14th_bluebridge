@@ -1,4 +1,5 @@
 from django.db import models
+from django.contrib.auth.models import User
 
 # Create your models here.
 class Policy(models.Model):
@@ -31,3 +32,18 @@ class Policy(models.Model):
     status = models.CharField(max_length=20)
 
     raw = models.JSONField()
+
+
+class Wishlist(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="wishlists")
+    policy = models.ForeignKey(Policy, on_delete=models.CASCADE, related_name="wishlisted_by")
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["user", "policy"],
+                name="unique_user_policy_wishlist",
+            ),
+        ]
