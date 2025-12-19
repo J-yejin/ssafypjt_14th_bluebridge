@@ -1,9 +1,9 @@
 import { createRouter, createWebHistory } from 'vue-router';
-import LandingPage from '../components/LandingPage.vue';
-import PolicyBrowse from '../components/PolicyBrowse.vue';
-import PolicyDetail from '../components/PolicyDetail.vue';
-import PolicyRecommend from '../components/PolicyRecommend.vue';
-import ProfilePage from '../components/ProfilePage.vue';
+import LandingPage from '../views/LandingPage.vue';
+import PolicyBrowse from '../views/PolicyBrowse.vue';
+import PolicyDetail from '../views/PolicyDetail.vue';
+import PolicyRecommend from '../views/PolicyRecommend.vue';
+import ProfilePage from '../views/ProfilePage.vue';
 
 const routes = [
   { path: '/', name: 'home', component: LandingPage },
