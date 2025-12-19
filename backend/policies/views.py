@@ -34,3 +34,4 @@ def policy_detail(request, id):
 
     serializer = PolicySerializer(policy)
     return Response(serializer.data)
+
