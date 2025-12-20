@@ -3,7 +3,9 @@
     <div class="max-w-[1400px] mx-auto px-8 lg:px-12">
       <div class="flex justify-between items-center h-20">
         <router-link to="/" class="flex items-center gap-3 group">
-          <div class="w-12 h-12 bg-gradient-to-br from-blue-500 via-blue-600 to-cyan-500 rounded-xl flex items-center justify-center shadow-lg group-hover:shadow-xl transition-all">
+          <div
+            class="w-12 h-12 bg-gradient-to-br from-blue-500 via-blue-600 to-cyan-500 rounded-xl flex items-center justify-center shadow-lg group-hover:shadow-xl transition-all"
+          >
             <span class="text-white tracking-tight">BB</span>
           </div>
           <div class="flex flex-col">
@@ -48,16 +50,34 @@
 
           <div class="w-px h-6 bg-gray-200 mx-2" />
 
-          <router-link
-            to="/profile"
-            :class="[
-              'flex items-center gap-2 px-5 py-2.5 rounded-lg transition-all',
-              isActive('/profile') ? 'bg-gradient-to-r from-blue-500 to-cyan-500 text-white shadow-md' : 'bg-gray-50 text-gray-700 hover:bg-gray-100'
-            ]"
-          >
-            <User :size="16" />
-            <span>내 프로필</span>
-          </router-link>
+          <template v-if="isLoggedIn">
+            <router-link
+              to="/profile"
+              :class="[
+                'flex items-center gap-2 px-5 py-2.5 rounded-lg transition-all',
+                isActive('/profile')
+                  ? 'bg-gradient-to-r from-blue-500 to-cyan-500 text-white shadow-md'
+                  : 'bg-gray-50 text-gray-700 hover:bg-gray-100'
+              ]"
+            >
+              <User :size="16" />
+              <span>프로필</span>
+            </router-link>
+          </template>
+          <template v-else>
+            <router-link
+              to="/login"
+              class="px-4 py-2.5 rounded-lg text-gray-700 hover:bg-blue-50 transition-all border border-gray-200"
+            >
+              로그인
+            </router-link>
+            <router-link
+              to="/signup"
+              class="px-4 py-2.5 rounded-lg text-white bg-gradient-to-r from-blue-500 to-cyan-500 shadow-md hover:shadow-lg transition-all"
+            >
+              회원가입
+            </router-link>
+          </template>
         </div>
       </div>
     </div>
@@ -71,4 +91,7 @@ import { Search, Sparkles, User, Home } from 'lucide-vue-next';
 
 const route = useRoute();
 const isActive = (path) => computed(() => route.path === path).value;
+const isLoggedIn = computed(() => {
+  return Boolean(localStorage.getItem('access')) || Boolean(localStorage.getItem('token'));
+});
 </script>

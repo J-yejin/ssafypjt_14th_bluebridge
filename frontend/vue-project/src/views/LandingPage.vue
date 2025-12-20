@@ -1,107 +1,582 @@
 <template>
-  <div class="min-h-[calc(100vh-5rem)]">
+  <div class="landing">
     <!-- Hero -->
-    <div class="max-w-[1400px] mx-auto px-8 lg:px-12 py-20">
-      <div class="text-center mb-20">
-        <div class="inline-block mb-6">
-          <span class="px-4 py-2 bg-blue-100 text-blue-700 rounded-full text-sm">청년을 위한 정책 큐레이션</span>
-        </div>
-        <h1 class="text-blue-900 mb-6 text-5xl lg:text-6xl leading-tight">
-          필요한 정책을,
-          <br />
-          <span class="bg-gradient-to-r from-blue-600 to-cyan-600 bg-clip-text text-transparent">지금 바로 찾아보세요</span>
+    <section class="hero">
+      <div class="hero-left card">
+        <div class="eyebrow">이벤트</div>
+        <h1>
+          청년 정책 신규 가입<br />
+          혜택 안내
         </h1>
-        <p class="text-gray-600 text-lg max-w-3xl mx-auto leading-relaxed">
-          Blue Bridge는 전국의 청년 정책을 한 곳에 모아 쉽고 빠르게 탐색할 수 있도록 돕습니다.
-          AI 기반 추천으로 나에게 맞는 정책을 바로 확인하세요.
+        <p class="body">
+          한 번의 가입으로 맞춤 알림을 받아 보고<br />
+          신청 기간을 놓치지 마세요.
         </p>
+        <div class="actions">
+          <button class="btn primary" @click="goRecommend">맞춤 알림 받기</button>
+          <button class="btn ghost" @click="goBrowse">정책 둘러보기</button>
+        </div>
       </div>
 
-      <!-- CTA Cards -->
-      <div class="grid lg:grid-cols-2 gap-8 max-w-6xl mx-auto mb-24">
-        <router-link
-          to="/browse"
-          class="group bg-white rounded-3xl p-10 shadow-xl hover:shadow-2xl transition-all border border-blue-100 hover:border-blue-200 relative overflow-hidden"
+      <div class="hero-right">
+        <div class="card service">
+          <p class="eyebrow">빠르고 안전한</p>
+          <h3>청년 정책 한눈에</h3>
+          <div class="service-grid">
+            <div class="pill">정책 브리핑</div>
+            <div class="pill">신청 일정</div>
+            <div class="pill">즐겨찾기</div>
+          </div>
+        </div>
+        <div class="card notice">
+          <div>
+            <p class="eyebrow">알려드립니다</p>
+            <h4>정책 신청 일정 사전 안내</h4>
+            <p class="date">2025.03 업데이트</p>
+          </div>
+          <button class="btn small" @click="goBrowse">자세히 보기</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- Feature highlights -->
+    <section class="features">
+      <div class="section-title">
+        <h2>신뢰와 안정의 정책 허브</h2>
+        <p>여러 기관의 정책을 한 번에 확인하고, 맞춤 추천을 받아보세요.</p>
+      </div>
+      <div class="feature-grid">
+        <div
+          v-for="card in featureCards"
+          :key="card.title"
+          class="card feature"
+          :class="card.className"
         >
-          <div class="absolute top-0 right-0 w-64 h-64 bg-gradient-to-br from-blue-50 to-transparent rounded-full -mr-32 -mt-32 opacity-50 group-hover:opacity-70 transition-opacity" />
-          <div class="relative">
-            <div class="w-20 h-20 bg-gradient-to-br from-blue-400 to-blue-600 rounded-2xl flex items-center justify-center mb-8 shadow-lg group-hover:scale-110 transition-transform">
-              <Search :size="40" class="text-white" />
-            </div>
-            <h2 class="text-blue-900 mb-4 text-3xl">정책 검색</h2>
-            <p class="text-gray-600 mb-8 text-lg leading-relaxed">
-              분야, 지역, 연령대별로 청년 정책을 빠르게 찾아보세요. 카테고리별로 정리된 정책 정보를 한눈에 볼 수 있습니다.
-            </p>
-            <div class="flex items-center text-blue-600 group-hover:text-blue-700 text-lg">
-              <span class="mr-3">정책 찾기 시작하기</span>
-              <ArrowRight :size="24" class="group-hover:translate-x-2 transition-transform" />
-            </div>
-          </div>
-        </router-link>
-
-        <router-link
-          to="/recommend"
-          class="group bg-white rounded-3xl p-10 shadow-xl hover:shadow-2xl transition-all border border-cyan-100 hover:border-cyan-200 relative overflow-hidden"
-        >
-          <div class="absolute top-0 right-0 w-64 h-64 bg-gradient-to-br from-cyan-50 to-transparent rounded-full -mr-32 -mt-32 opacity-50 group-hover:opacity-70 transition-opacity" />
-          <div class="relative">
-            <div class="w-20 h-20 bg-gradient-to-br from-cyan-400 to-cyan-600 rounded-2xl flex items-center justify-center mb-8 shadow-lg group-hover:scale-110 transition-transform">
-              <Sparkles :size="40" class="text-white" />
-            </div>
-            <h2 class="text-blue-900 mb-4 text-3xl">맞춤 추천</h2>
-            <p class="text-gray-600 mb-8 text-lg leading-relaxed">
-              프로필과 관심사를 입력하면 AI가 추천하는 정책을 받을 수 있습니다. RAG 검색으로 궁금한 정책을 자연어로 물어보세요.
-            </p>
-            <div class="flex items-center text-cyan-600 group-hover:text-cyan-700 text-lg">
-              <span class="mr-3">맞춤 추천받기</span>
-              <ArrowRight :size="24" class="group-hover:translate-x-2 transition-transform" />
-            </div>
-          </div>
-        </router-link>
-      </div>
-
-      <!-- Categories -->
-      <div class="bg-white/70 backdrop-blur-sm rounded-3xl p-12 max-w-6xl mx-auto border border-blue-100/50 shadow-lg">
-        <div class="text-center mb-10">
-          <h3 class="text-blue-900 mb-3 text-3xl">주요 정책 카테고리</h3>
-          <p class="text-gray-600">관심 있는 분야를 눌러 정책을 살펴보세요.</p>
-        </div>
-        <div class="grid grid-cols-2 md:grid-cols-4 gap-5">
-          <div
-            v-for="category in categories"
-            :key="category"
-            class="bg-gradient-to-br from-blue-50 to-cyan-50 rounded-2xl p-6 text-center border border-blue-100 hover:shadow-md hover:scale-105 transition-all cursor-pointer group"
-          >
-            <span class="text-blue-700 text-lg group-hover:text-blue-800">{{ category }}</span>
-          </div>
+          <img v-if="card.image" :src="card.image" :alt="card.title" class="feature-img" />
+          <div v-else class="icon">{{ card.fallback }}</div>
+          <h3>{{ card.title }}</h3>
+          <p>{{ card.desc }}</p>
         </div>
       </div>
-    </div>
+    </section>
 
-    <!-- Stats -->
-    <div class="bg-gradient-to-r from-blue-600 to-cyan-600 py-16">
-      <div class="max-w-[1400px] mx-auto px-8 lg:px-12">
-        <div class="grid md:grid-cols-3 gap-12 text-center text-white">
-          <div>
-            <div class="text-5xl mb-3 opacity-90">500+</div>
-            <div class="text-blue-100 text-lg">등록된 청년 정책</div>
-          </div>
-          <div>
-            <div class="text-5xl mb-3 opacity-90">50,000+</div>
-            <div class="text-blue-100 text-lg">누적 이용자</div>
-          </div>
-          <div>
-            <div class="text-5xl mb-3 opacity-90">98%</div>
-            <div class="text-blue-100 text-lg">만족도</div>
-          </div>
+    <!-- Banner CTAs -->
+    <section class="banners">
+      <div class="banner card">
+        <div>
+          <p class="eyebrow">미리 체험하기</p>
+          <h3>정책 브리핑 맛보기</h3>
+          <p>관심 분야를 선택하면 샘플 브리핑을 보여드립니다.</p>
+        </div>
+        <button class="btn primary">샘플 보기</button>
+      </div>
+      <div class="banner card">
+        <div>
+          <p class="eyebrow">온라인 신청</p>
+          <h3>신청 링크 바로가기</h3>
+          <p>지원 대상 확인 후, 한 번에 신청 페이지로 이동하세요.</p>
+        </div>
+        <button class="btn ghost">신청 링크 모아보기</button>
+      </div>
+    </section>
+
+    <!-- Partner / categories -->
+    <section class="partners card">
+      <div class="section-title compact">
+        <h2>나만의 정책 파트너</h2>
+        <p>카테고리별 맞춤 정책을 빠르게 탐색하세요.</p>
+      </div>
+      <div class="partner-grid">
+        <div class="partner-tile">
+          <div class="bubble mint">💼</div>
+          <span>취업·창업</span>
+        </div>
+        <div class="partner-tile">
+          <div class="bubble blue">🏠</div>
+          <span>주거·대출</span>
+        </div>
+        <div class="partner-tile">
+          <div class="bubble sand">🎓</div>
+          <span>교육·훈련</span>
+        </div>
+        <div class="partner-tile">
+          <div class="bubble coral">🧡</div>
+          <span>복지·의료</span>
+        </div>
+        <div class="partner-tile">
+          <div class="bubble purple">💳</div>
+          <span>금융·지원금</span>
+        </div>
+        <div class="partner-tile">
+          <div class="bubble gray">📑</div>
+          <span>기타 서비스</span>
         </div>
       </div>
-    </div>
+    </section>
+
+    <!-- Info grid -->
+    <section class="info-grid">
+      <div class="card list-card">
+        <div class="list-header">
+          <h3>공지사항</h3>
+          <a href="#">더보기</a>
+        </div>
+        <ul>
+          <li>
+            <span>정책 데이터 업데이트 안내</span>
+            <span class="date">2025.03.01</span>
+          </li>
+          <li>
+            <span>맞춤 추천 베타 오픈</span>
+            <span class="date">2025.02.20</span>
+          </li>
+          <li>
+            <span>서비스 점검 일정 안내</span>
+            <span class="date">2025.02.05</span>
+          </li>
+        </ul>
+      </div>
+
+      <div class="card list-card">
+        <div class="list-header">
+          <h3>자료실</h3>
+          <a href="#">더보기</a>
+        </div>
+        <ul>
+          <li>
+            <span>정책 신청 체크리스트</span>
+            <span class="tag">PDF</span>
+          </li>
+          <li>
+            <span>연령·소득 기준 정리표</span>
+            <span class="tag">XLSX</span>
+          </li>
+          <li>
+            <span>지역별 지원 요약</span>
+            <span class="tag">PDF</span>
+          </li>
+        </ul>
+      </div>
+
+      <div class="card contact">
+        <div>
+          <p class="eyebrow">고객센터</p>
+          <h3>1577-5500</h3>
+          <p class="body">평일 09:00 ~ 17:45 (주말·공휴일 휴무)</p>
+        </div>
+        <div class="contact-actions">
+          <button class="btn ghost small">1:1 문의</button>
+          <button class="btn primary small">FAQ</button>
+        </div>
+      </div>
+    </section>
   </div>
 </template>
 
 <script setup>
-import { Search, Sparkles, ArrowRight } from 'lucide-vue-next';
+import { useRouter } from 'vue-router';
 
-const categories = ['창업', '주거', '교육', '취업', '문화', '건강', '지역', '농업'];
+const router = useRouter();
+const goBrowse = () => router.push('/browse');
+const goRecommend = () => router.push('/recommend');
+
+// 이미지가 없으면 fallback 이모지 사용
+const featureCards = [
+  {
+    title: '기관별 정책 모음',
+    desc: '정부·지자체·용책을 한 곳에.',
+    className: 'mint',
+    image: '/feature-org.png', // public/feature-org.png
+    fallback: '🏦',
+  },
+  {
+    title: '신청 일정 알림',
+    desc: '마감일 이전에 미리 알림을 받아보세요.',
+    className: 'sand',
+    image: '/feature-calendar.png', // public/feature-calendar.png
+    fallback: '📅',
+  },
+  {
+    title: '맞춤 추천',
+    desc: '프로필 기반으로 꼭 맞는 정책 찾기.',
+    className: 'purple',
+    image: '/feature-recommend.png', // public/feature-recommend.png
+    fallback: '🔍',
+  },
+];
 </script>
+
+<style scoped>
+:global(body) {
+  background: #f6f8fb;
+  color: #0f172a;
+  font-family: 'Pretendard', 'Inter', 'Noto Sans KR', system-ui, -apple-system, sans-serif;
+}
+
+.landing {
+  display: flex;
+  flex-direction: column;
+  gap: 32px;
+  padding: 24px;
+  text-align: center;
+}
+
+.hero,
+.features,
+.banners,
+.partners,
+.info-grid {
+  max-width: 1200px;
+  width: 100%;
+  margin: 0 auto;
+}
+
+.card {
+  background: #fff;
+  border-radius: 18px;
+  box-shadow: 0 16px 40px rgba(15, 23, 42, 0.08);
+  border: 1px solid #e5e7eb;
+}
+
+.hero {
+  display: grid;
+  grid-template-columns: 1.6fr 1fr;
+  gap: 16px;
+}
+
+.hero-left {
+  padding: 32px;
+  background: linear-gradient(135deg, #1d6bff 0%, #5aa6ff 100%);
+  color: #fff;
+  text-align: center;
+}
+
+.hero-left h1 {
+  margin: 8px 0 12px;
+  font-size: 32px;
+  line-height: 1.2;
+}
+
+.body {
+  margin: 0;
+  font-size: 15px;
+  line-height: 1.6;
+  color: inherit;
+}
+
+.eyebrow {
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #60a5fa;
+}
+
+.hero-left .eyebrow {
+  color: #cbe2ff;
+}
+
+.actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 18px;
+  justify-content: center;
+}
+
+.btn {
+  border: none;
+  cursor: pointer;
+  border-radius: 12px;
+  font-weight: 700;
+  padding: 12px 16px;
+  transition: transform 0.12s ease, box-shadow 0.12s ease, background 0.12s ease;
+}
+
+.btn.primary {
+  background: #0f60ff;
+  color: #fff;
+  box-shadow: 0 10px 25px rgba(15, 96, 255, 0.35);
+}
+
+.btn.ghost {
+  background: #e8f1ff;
+  color: #0f60ff;
+  border: 1px solid #c5dafc;
+}
+
+.btn.small {
+  padding: 10px 12px;
+  font-size: 14px;
+}
+
+.btn:hover {
+  transform: translateY(-1px);
+}
+
+.hero-right {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.hero-right .card {
+  padding: 20px;
+  text-align: center;
+}
+
+.service h3 {
+  margin: 6px 0 10px;
+  font-size: 22px;
+  color: #0f172a;
+}
+
+.service-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  margin: 10px 0;
+}
+
+.pill {
+  background: #f0f5ff;
+  color: #1d4ed8;
+  padding: 10px 12px;
+  border-radius: 12px;
+  text-align: center;
+  font-weight: 600;
+  font-size: 14px;
+}
+
+.notice h4 {
+  margin: 4px 0 6px;
+  font-size: 18px;
+}
+
+.date {
+  color: #64748b;
+  font-size: 13px;
+}
+
+.features {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.section-title h2 {
+  margin: 0 0 4px;
+  font-size: 26px;
+}
+
+.section-title p {
+  margin: 0;
+  color: #64748b;
+}
+
+.feature-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 18px;
+}
+
+.feature {
+  display: grid;
+  gap: 12px;
+  padding: 32px;
+  text-align: center;
+  min-height: 240px;
+  justify-items: center;
+}
+
+.feature .icon {
+  font-size: 38px;
+}
+
+.feature-img {
+  width: 160px;
+  height: 160px;
+  object-fit: contain;
+}
+
+.feature h3 {
+  margin: 0;
+  font-size: 20px;
+}
+
+.feature p {
+  margin: 0;
+  color: #475569;
+  font-size: 15px;
+}
+
+.feature.mint {
+  background: linear-gradient(135deg, #e8fff7 0%, #d8f7ec 100%);
+}
+.feature.sand {
+  background: linear-gradient(135deg, #fff7e6 0%, #ffe9c7 100%);
+}
+.feature.purple {
+  background: linear-gradient(135deg, #f5f0ff 0%, #e6ddff 100%);
+}
+
+.banners {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.banner {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 22px 24px;
+  text-align: center;
+}
+
+.partners {
+  padding: 24px;
+}
+
+.partner-grid {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 12px;
+  margin-top: 16px;
+}
+
+.partner-tile {
+  background: #f8fafc;
+  border-radius: 14px;
+  padding: 16px 12px;
+  display: grid;
+  justify-items: center;
+  gap: 8px;
+  border: 1px solid #e5e7eb;
+}
+
+.bubble {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  font-size: 22px;
+  color: #0f172a;
+}
+.bubble.mint {
+  background: #def8ef;
+}
+.bubble.blue {
+  background: #d9e8ff;
+}
+.bubble.sand {
+  background: #ffeecd;
+}
+.bubble.coral {
+  background: #ffe0d7;
+}
+.bubble.purple {
+  background: #ede7ff;
+}
+.bubble.gray {
+  background: #e2e8f0;
+}
+
+.info-grid {
+  display: grid;
+  grid-template-columns: 2fr 2fr 1.4fr;
+  gap: 12px;
+}
+
+.list-card {
+  padding: 18px;
+  display: grid;
+  gap: 12px;
+  text-align: center;
+}
+
+.list-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-weight: 700;
+}
+
+.list-header a {
+  font-size: 13px;
+  color: #2563eb;
+  text-decoration: none;
+}
+
+.list-card ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: grid;
+  gap: 10px;
+}
+
+.list-card li {
+  display: flex;
+  justify-content: space-between;
+  font-size: 14px;
+  color: #1f2937;
+}
+
+.tag {
+  background: #e5edff;
+  color: #1d4ed8;
+  padding: 4px 8px;
+  border-radius: 8px;
+  font-weight: 700;
+  font-size: 12px;
+}
+
+.contact {
+  padding: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  text-align: center;
+}
+
+.contact h3 {
+  margin: 2px 0;
+  font-size: 24px;
+}
+
+.contact-actions {
+  display: flex;
+  gap: 8px;
+}
+
+@media (max-width: 1024px) {
+  .hero {
+    grid-template-columns: 1fr;
+  }
+  .feature-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .banners {
+    grid-template-columns: 1fr;
+  }
+  .partner-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+  .info-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 640px) {
+  .landing {
+    padding: 16px;
+  }
+  .feature-grid {
+    grid-template-columns: 1fr;
+  }
+  .partner-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+</style>
