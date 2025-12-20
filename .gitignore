@@ -140,6 +140,13 @@ ENV/
 env.bak/
 venv.bak/
 
+# Node / frontend
+node_modules/
+dist/
+frontend/vue-project/node_modules/
+frontend/vue-project/dist/
+.DS_Store
+
 # Spyder project settings
 .spyderproject
 .spyproject
