@@ -3,6 +3,52 @@ import { ref } from 'vue';
 import { fetchPolicies, fetchPolicyById, fetchRecommendations } from '../api/client';
 import { mockPolicies } from '../data/mockPolicies';
 
+const toPeriod = (start, end) => {
+  if (!start && !end) return '';
+  if (start && end) return `${start} ~ ${end}`;
+  return start || end || '';
+};
+
+const toAgeRange = (minAge, maxAge) => {
+  if (!minAge && !maxAge) return '제한없음';
+  if (minAge && maxAge) return `${minAge}-${maxAge}`;
+  return minAge ? `${minAge}+` : `${maxAge}-`;
+};
+
+const transformPolicy = (p) => {
+  if (!p) return null;
+
+  const eligibility = [
+    ...(p.employment_requirements || []),
+    ...(p.education_requirements || []),
+    ...(p.major_requirements || []),
+    ...(p.income_requirements || []),
+    ...(p.special_target || []),
+  ].filter(Boolean);
+
+  return {
+    id: p.id ?? p.source_id ?? p.sourceId ?? String(Math.random()),
+    title: p.title || '',
+    category: p.source || '기타',
+    organization: p.provider || '',
+    description: p.summary || '',
+    eligibility,
+    benefits: p.apply_method || '',
+    applicationPeriod: toPeriod(p.start_date, p.end_date),
+    ageRange: toAgeRange(p.min_age, p.max_age),
+    region: p.region_sigungu || p.region_sido || '',
+    employmentStatus: p.employment_requirements || [],
+    tags: [
+      ...(p.special_target || []),
+      ...(p.major_requirements || []),
+      ...(p.education_requirements || []),
+      p.source || '',
+    ].filter(Boolean),
+    detailLink: p.detail_link || '',
+    raw: p,
+  };
+};
+
 export const usePolicyStore = defineStore('policy', () => {
   const policies = ref([...mockPolicies]);
   const loading = ref(false);
@@ -20,10 +66,10 @@ export const usePolicyStore = defineStore('policy', () => {
     try {
       const data = await fetchPolicies(filters);
       if (Array.isArray(data)) {
-        setPolicies(data);
+        setPolicies(data.map(transformPolicy).filter(Boolean));
       }
     } catch (err) {
-      error.value = err.message || '정책 목록을 불러오지 못했습니다.';
+      error.value = err.message || '정책 목록을 불러오지 못했습니다';
       if (!policies.value.length) {
         setPolicies(mockPolicies);
       }
@@ -38,16 +84,17 @@ export const usePolicyStore = defineStore('policy', () => {
     try {
       const data = await fetchPolicyById(id);
       if (data) {
+        const mapped = transformPolicy(data) || data;
         const existingIndex = policies.value.findIndex((p) => String(p.id) === String(id));
         if (existingIndex > -1) {
-          policies.value[existingIndex] = data;
+          policies.value[existingIndex] = mapped;
         } else {
-          policies.value.push(data);
+          policies.value.push(mapped);
         }
-        return data;
+        return mapped;
       }
     } catch (err) {
-      error.value = err.message || '정책 정보를 불러오지 못했습니다.';
+      error.value = err.message || '정책 상세를 불러오지 못했습니다';
       return getById(id);
     } finally {
       loading.value = false;
@@ -61,17 +108,18 @@ export const usePolicyStore = defineStore('policy', () => {
     try {
       const data = await fetchRecommendations(payload);
       if (Array.isArray(data)) {
-        return data;
+        return data.map(transformPolicy).filter(Boolean);
       }
     } catch (err) {
-      error.value = err.message || '추천 결과를 불러오지 못했습니다.';
+      error.value = err.message || '추천 결과를 불러오지 못했습니다';
       // fallback: simple filtering by interests + region
       const interests = (payload?.interests || []).map((v) => v.toLowerCase());
       return policies.value.filter((policy) => {
         const tagMatch = interests.length
           ? policy.tags.some((tag) => interests.includes(tag.toLowerCase()))
           : true;
-        const regionMatch = payload?.region ? policy.region === payload.region || policy.region === '전국' : true;
+        const regionMatch =
+          payload?.region ? policy.region === payload.region || policy.region === '전국' : true;
         return tagMatch && regionMatch;
       });
     } finally {
