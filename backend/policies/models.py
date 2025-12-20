@@ -89,6 +89,7 @@ class Policy(models.Model):
             models.Index(fields=["policy_type"]),
             models.Index(fields=["category"]),
             models.Index(fields=["region_sido"]),
+        ]
 
 class Wishlist(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="wishlists")
