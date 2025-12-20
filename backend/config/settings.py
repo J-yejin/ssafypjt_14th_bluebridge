@@ -35,6 +35,8 @@ INSTALLED_APPS = [
     'accounts',
     'profiles',
     'policies',
+    'boards',
+    'corsheaders',
     # third-party
     'rest_framework',
 
@@ -54,6 +56,7 @@ REST_FRAMEWORK = {
 }
 
 MIDDLEWARE = [
+    'corsheaders.middleware.CorsMiddleware',
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
@@ -135,3 +138,8 @@ STATIC_URL = 'static/'
 # https://docs.djangoproject.com/en/4.2/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+# CORS (for local frontend at 5173)
+CORS_ALLOWED_ORIGINS = [
+    'http://localhost:5173',
+]

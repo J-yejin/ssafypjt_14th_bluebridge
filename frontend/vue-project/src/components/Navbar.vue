@@ -1,0 +1,74 @@
+<template>
+  <nav class="bg-white/90 backdrop-blur-lg border-b border-blue-100/50 sticky top-0 z-50 shadow-sm">
+    <div class="max-w-[1400px] mx-auto px-8 lg:px-12">
+      <div class="flex justify-between items-center h-20">
+        <router-link to="/" class="flex items-center gap-3 group">
+          <div class="w-12 h-12 bg-gradient-to-br from-blue-500 via-blue-600 to-cyan-500 rounded-xl flex items-center justify-center shadow-lg group-hover:shadow-xl transition-all">
+            <span class="text-white tracking-tight">BB</span>
+          </div>
+          <div class="flex flex-col">
+            <span class="text-blue-900 tracking-tight">Blue Bridge</span>
+            <span class="text-xs text-gray-500">청년 정책 허브</span>
+          </div>
+        </router-link>
+
+        <div class="flex gap-2 items-center">
+          <router-link
+            to="/"
+            :class="[
+              'flex items-center gap-2 px-5 py-2.5 rounded-lg transition-all',
+              isActive('/') ? 'bg-blue-50 text-blue-700' : 'text-gray-600 hover:bg-blue-50/50 hover:text-blue-600'
+            ]"
+          >
+            <Home :size="16" />
+            <span>홈</span>
+          </router-link>
+
+          <router-link
+            to="/browse"
+            :class="[
+              'flex items-center gap-2 px-5 py-2.5 rounded-lg transition-all',
+              isActive('/browse') ? 'bg-blue-50 text-blue-700' : 'text-gray-600 hover:bg-blue-50/50 hover:text-blue-600'
+            ]"
+          >
+            <Search :size="16" />
+            <span>정책 찾기</span>
+          </router-link>
+
+          <router-link
+            to="/recommend"
+            :class="[
+              'flex items-center gap-2 px-5 py-2.5 rounded-lg transition-all',
+              isActive('/recommend') ? 'bg-blue-50 text-blue-700' : 'text-gray-600 hover:bg-blue-50/50 hover:text-blue-600'
+            ]"
+          >
+            <Sparkles :size="16" />
+            <span>정책 추천</span>
+          </router-link>
+
+          <div class="w-px h-6 bg-gray-200 mx-2" />
+
+          <router-link
+            to="/profile"
+            :class="[
+              'flex items-center gap-2 px-5 py-2.5 rounded-lg transition-all',
+              isActive('/profile') ? 'bg-gradient-to-r from-blue-500 to-cyan-500 text-white shadow-md' : 'bg-gray-50 text-gray-700 hover:bg-gray-100'
+            ]"
+          >
+            <User :size="16" />
+            <span>내 프로필</span>
+          </router-link>
+        </div>
+      </div>
+    </div>
+  </nav>
+</template>
+
+<script setup>
+import { useRoute } from 'vue-router';
+import { computed } from 'vue';
+import { Search, Sparkles, User, Home } from 'lucide-vue-next';
+
+const route = useRoute();
+const isActive = (path) => computed(() => route.path === path).value;
+</script>
