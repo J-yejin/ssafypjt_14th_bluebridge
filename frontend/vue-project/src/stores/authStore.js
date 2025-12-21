@@ -4,6 +4,7 @@ import { ref, computed } from 'vue';
 export const useAuthStore = defineStore('auth', () => {
   const access = ref(localStorage.getItem('access') || '');
   const refresh = ref(localStorage.getItem('refresh') || '');
+  const username = ref(localStorage.getItem('username') || '');
 
   const isAuthenticated = computed(() => Boolean(access.value));
 
@@ -18,18 +19,31 @@ export const useAuthStore = defineStore('auth', () => {
     }
   };
 
+  const setUsername = (name = '') => {
+    username.value = name || '';
+    if (name) {
+      localStorage.setItem('username', name);
+    } else {
+      localStorage.removeItem('username');
+    }
+  };
+
   const clearTokens = () => {
     access.value = '';
     refresh.value = '';
+    username.value = '';
     localStorage.removeItem('access');
     localStorage.removeItem('refresh');
+    localStorage.removeItem('username');
   };
 
   return {
     access,
     refresh,
+    username,
     isAuthenticated,
     setTokens,
+    setUsername,
     clearTokens,
   };
 });

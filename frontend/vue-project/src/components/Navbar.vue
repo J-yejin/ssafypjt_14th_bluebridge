@@ -48,6 +48,17 @@
             <span>정책 추천</span>
           </router-link>
 
+          <router-link
+            to="/boards"
+            :class="[
+              'flex items-center gap-2 px-5 py-2.5 rounded-lg transition-all',
+              isActive('/boards') ? 'bg-blue-50 text-blue-700' : 'text-gray-600 hover:bg-blue-50/50 hover:text-blue-600'
+            ]"
+          >
+            <Search :size="16" />
+            <span>게시글</span>
+          </router-link>
+
           <div class="w-px h-6 bg-gray-200 mx-2" />
 
           <template v-if="isLoggedIn">
@@ -91,12 +102,11 @@
 </template>
 
 <script setup>
-import { useRoute } from 'vue-router';
+import { useRoute, useRouter } from 'vue-router';
 import { computed } from 'vue';
 import { Search, Sparkles, User, Home } from 'lucide-vue-next';
 import { useAuthStore } from '../stores/authStore';
 import { useUserStore } from '../stores/userStore';
-import { useRouter } from 'vue-router';
 
 const route = useRoute();
 const router = useRouter();

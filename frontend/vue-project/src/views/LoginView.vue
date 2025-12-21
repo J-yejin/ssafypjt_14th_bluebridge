@@ -42,6 +42,7 @@ const handleLogin = async () => {
   try {
     const data = await login({ username: username.value, password: password.value });
     authStore.setTokens({ access: data?.access, refresh: data?.refresh });
+    authStore.setUsername(username.value);
     router.push('/profile');
   } catch (e) {
     error.value = e.message || '로그인에 실패했습니다';

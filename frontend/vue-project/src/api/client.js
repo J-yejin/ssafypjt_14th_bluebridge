@@ -86,3 +86,32 @@ export async function signup(payload) {
     body: JSON.stringify(payload),
   });
 }
+
+// boards
+export async function fetchBoards() {
+  return request('/boards/');
+}
+
+export async function fetchBoardById(id) {
+  return request(`/boards/${id}/`);
+}
+
+export async function createBoard(payload) {
+  return request('/boards/', {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function createComment(boardId, payload) {
+  return request(`/boards/${boardId}/comments/`, {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function deleteComment(commentId) {
+  return request(`/boards/comments/${commentId}/`, {
+    method: 'DELETE',
+  });
+}
