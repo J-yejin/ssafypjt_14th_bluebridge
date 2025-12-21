@@ -66,7 +66,7 @@ class Policy(models.Model):
     # =========================
     provider = models.CharField(max_length=200, null=True, blank=True)
     apply_method = models.CharField(max_length=200, null=True, blank=True)
-    apply_link = models.CharField(max_length=500, null=True, blank=True)
+    apply_links = models.JSONField(default=list, blank=True)
 
     benefit_type = models.CharField(max_length=50, null=True, blank=True) # 현금 / 교육 / 서비스 등
     benefit_detail = models.TextField(null=True, blank=True)
