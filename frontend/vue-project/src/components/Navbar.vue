@@ -61,8 +61,14 @@
               ]"
             >
               <User :size="16" />
-              <span>프로필</span>
+              <span>{{ profileLabel }}</span>
             </router-link>
+            <button
+              class="px-4 py-2.5 rounded-lg text-gray-700 hover:bg-blue-50 transition-all border border-gray-200"
+              @click="handleLogout"
+            >
+              로그아웃
+            </button>
           </template>
           <template v-else>
             <router-link
@@ -88,10 +94,21 @@
 import { useRoute } from 'vue-router';
 import { computed } from 'vue';
 import { Search, Sparkles, User, Home } from 'lucide-vue-next';
+import { useAuthStore } from '../stores/authStore';
+import { useUserStore } from '../stores/userStore';
+import { useRouter } from 'vue-router';
 
 const route = useRoute();
+const router = useRouter();
 const isActive = (path) => computed(() => route.path === path).value;
-const isLoggedIn = computed(() => {
-  return Boolean(localStorage.getItem('access')) || Boolean(localStorage.getItem('token'));
-});
+const authStore = useAuthStore();
+const userStore = useUserStore();
+const isLoggedIn = computed(() => authStore.isAuthenticated);
+const profileLabel = computed(() => (userStore.isProfileComplete ? '마이 프로필' : '프로필'));
+
+const handleLogout = () => {
+  authStore.clearTokens();
+  userStore.resetProfile();
+  router.push('/');
+};
 </script>

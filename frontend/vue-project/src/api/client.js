@@ -6,15 +6,32 @@ const jsonHeaders = {
 
 async function request(path, options = {}) {
   const url = `${API_BASE_URL}${path}`;
-  const config = {
-    headers: jsonHeaders,
-    ...options,
+  const token = localStorage.getItem('access');
+  const headers = {
+    ...jsonHeaders,
+    ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    ...(options.headers || {}),
   };
+  const config = { ...options, headers };
 
   const response = await fetch(url, config);
   if (!response.ok) {
-    const errorText = await response.text();
-    throw new Error(errorText || `Request failed: ${response.status}`);
+    let detail = '';
+    try {
+      const errJson = await response.clone().json();
+      // 토큰 불일치/만료 시 토큰 초기화
+      if (errJson?.code === 'token_not_valid') {
+        localStorage.removeItem('access');
+        localStorage.removeItem('refresh');
+        detail = '로그인이 만료되었습니다. 다시 로그인해 주세요.';
+      } else if (errJson?.detail) {
+        detail = typeof errJson.detail === 'string' ? errJson.detail : JSON.stringify(errJson.detail);
+      }
+    } catch (_) {
+      // fallback to text
+      detail = await response.text();
+    }
+    throw new Error(detail || `Request failed: ${response.status}`);
   }
   if (response.status === 204) return null;
   return response.json();
@@ -44,12 +61,28 @@ export async function fetchRecommendations(payload) {
 }
 
 export async function fetchProfile() {
-  return request('/profile/');
+  // 현재 사용자 프로필은 /profile/me/ 엔드포인트에서 조회
+  return request('/profile/me/');
 }
 
 export async function saveProfile(profile) {
-  return request('/profile/', {
-    method: 'POST',
+  // 프로필 업데이트는 /profile/me/ 엔드포인트로 전송
+  return request('/profile/me/', {
+    method: 'PUT',
     body: JSON.stringify(profile),
+  });
+}
+
+export async function login(payload) {
+  return request('/auth/login/', {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function signup(payload) {
+  return request('/auth/signup/', {
+    method: 'POST',
+    body: JSON.stringify(payload),
   });
 }
