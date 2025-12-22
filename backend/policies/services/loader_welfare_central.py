@@ -138,7 +138,7 @@ def parse_welfare_central_policy(item):
         "detail_links": build_apply_links(item.get("사이트목록")),
         "detail_contact": build_apply_links(item.get("문의처목록")),
 
-        "policy_type": policy_type,
+        "service_type": policy_type,
         "policy_detail": policy_detail,
 
         # =====================
