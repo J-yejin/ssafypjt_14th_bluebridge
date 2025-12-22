@@ -2,11 +2,19 @@ import { defineStore } from 'pinia';
 import { ref, computed } from 'vue';
 import { fetchProfile, saveProfile as saveProfileApi } from '../api/client';
 
-// 백엔드 프로필 스키마: age, region, interest(string)
+// 백엔드 프로필 스키마와 동기화
 const emptyProfile = {
   age: '',
   region: '',
   interests: [],
+  gender: '',
+  householdIncome: '',
+  familySize: '',
+  incomeQuintile: '',
+  employmentStatus: '',
+  educationLevel: '',
+  major: '',
+  specialTargets: [],
 };
 
 export const useUserStore = defineStore('user', () => {
@@ -16,7 +24,14 @@ export const useUserStore = defineStore('user', () => {
 
   const isProfileComplete = computed(() => {
     const current = profile.value;
-    return current.age && current.region && current.interests.length > 0;
+    return (
+      current.age &&
+      current.region &&
+      current.interests.length > 0 &&
+      current.gender &&
+      current.employmentStatus &&
+      current.educationLevel
+    );
   });
 
   const updateProfile = (newProfile) => {
@@ -24,6 +39,7 @@ export const useUserStore = defineStore('user', () => {
       ...profile.value,
       ...newProfile,
       interests: [...(newProfile.interests ?? profile.value.interests ?? [])],
+      specialTargets: [...(newProfile.specialTargets ?? profile.value.specialTargets ?? [])],
     };
   };
 
@@ -34,10 +50,23 @@ export const useUserStore = defineStore('user', () => {
       const data = await fetchProfile();
       if (data) {
         const interests = data.interest ? data.interest.split(',').map((v) => v.trim()).filter(Boolean) : [];
-        profile.value = { ...emptyProfile, age: data.age || '', region: data.region || '', interests };
+        profile.value = {
+          ...emptyProfile,
+          age: data.age || '',
+          region: data.region || '',
+          interests,
+          gender: data.gender || '',
+          householdIncome: data.household_income || '',
+          familySize: data.family_size || '',
+          incomeQuintile: data.income_quintile || '',
+          employmentStatus: data.employment_status || '',
+          educationLevel: data.education_level || '',
+          major: data.major || '',
+          specialTargets: Array.isArray(data.special_targets) ? data.special_targets : [],
+        };
       }
     } catch (err) {
-      error.value = err.message || '프로필을 불러오지 못했습니다';
+      error.value = err.message || '프로필을 불러오지 못했습니다.';
     } finally {
       loading.value = false;
     }
@@ -51,6 +80,13 @@ export const useUserStore = defineStore('user', () => {
         age: profile.value.age,
         region: profile.value.region,
         interest: profile.value.interests.join(','),
+        gender: profile.value.gender || '',
+        household_income: profile.value.householdIncome || null,
+        family_size: profile.value.familySize || null,
+        employment_status: profile.value.employmentStatus || '',
+        education_level: profile.value.educationLevel || '',
+        major: profile.value.major || '',
+        special_targets: profile.value.specialTargets || [],
       };
       await saveProfileApi(payload);
       return true;

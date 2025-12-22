@@ -1,10 +1,10 @@
 <template>
   <div class="min-h-screen">
-    <div class="max-w-[800px] mx-auto px-8 lg:px-12 py-12">
+    <div class="max-w-[900px] mx-auto px-8 lg:px-12 py-12">
       <div class="mb-12 text-center">
         <h1 class="text-blue-900 mb-3 text-4xl">마이 프로필</h1>
         <p class="text-gray-600 text-lg">
-          프로필을 채우면 맞춤 정책 추천과 알림을 받을 수 있습니다.
+          프로필을 채우면 맞춤 정책 추천과 안내를 받을 수 있어요.
         </p>
       </div>
 
@@ -18,7 +18,7 @@
             <div>
               <span class="text-gray-700 text-lg block">프로필 완성도</span>
               <span :class="[userStore.isProfileComplete ? 'text-green-600' : 'text-blue-600', 'text-sm']">
-                {{ userStore.isProfileComplete ? '모든 필수 항목이 채워졌습니다.' : '필수 정보를 입력해 주세요.' }}
+                {{ userStore.isProfileComplete ? '모든 필수 항목을 입력했어요.' : '필수 정보를 입력해 주세요.' }}
               </span>
             </div>
           </div>
@@ -38,8 +38,8 @@
       </div>
 
       <!-- Profile Form -->
-      <form @submit.prevent="handleSubmit" class="bg-white rounded-2xl shadow-lg p-10 border border-blue-100">
-        <div class="grid md:grid-cols-2 gap-8 mb-10">
+      <form @submit.prevent="handleSubmit" class="bg-white rounded-2xl shadow-lg p-10 border border-blue-100 space-y-10">
+        <div class="grid md:grid-cols-2 gap-8">
           <!-- Age -->
           <div>
             <label class="block text-gray-700 mb-3 text-lg">
@@ -72,8 +72,149 @@
           </div>
         </div>
 
+        <div class="grid md:grid-cols-2 gap-8">
+          <div>
+            <label class="block text-gray-700 mb-3 text-lg">
+              성별
+            </label>
+            <select
+              v-model="formData.gender"
+              class="w-full px-5 py-4 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-lg"
+            >
+              <option value="">선택해 주세요</option>
+              <option value="male">남성</option>
+              <option value="female">여성</option>
+              <option value="other">기타/응답안함</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-gray-700 mb-3 text-lg">
+              월 소득(원) <span class="text-gray-500 text-sm">(선택)</span>
+            </label>
+            <input
+              type="number"
+              v-model="formData.householdIncome"
+              class="w-full px-5 py-4 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-lg"
+              placeholder="예) 3500000"
+              min="0"
+            />
+            <p class="text-sm text-gray-500 mt-2">모르면 비워두세요.</p>
+          </div>
+        </div>
+
+        <div class="grid md:grid-cols-2 gap-8">
+          <div>
+            <label class="block text-gray-700 mb-3 text-lg">
+              가구원 수 <span class="text-gray-500 text-sm">(선택)</span>
+            </label>
+            <input
+              type="number"
+              v-model="formData.familySize"
+              class="w-full px-5 py-4 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-lg"
+              placeholder="예) 4"
+              min="1"
+              max="10"
+            />
+            <p class="text-sm text-gray-500 mt-2">
+              입력한 값으로 소득분위가 자동 계산됩니다. {{ formData.incomeQuintile ? `(현재: ${formData.incomeQuintile})` : '' }}
+            </p>
+          </div>
+
+          <div>
+            <label class="block text-gray-700 mb-3 text-lg">
+              소득분위 (자동 계산)
+            </label>
+            <input
+              type="text"
+              :value="formData.incomeQuintile || '소득 / 가구원 수를 입력하면 계산됩니다'"
+              class="w-full px-5 py-4 border-2 border-gray-200 rounded-xl bg-gray-50 text-gray-600"
+              readonly
+            />
+          </div>
+        </div>
+
+        <div class="grid md:grid-cols-2 gap-8">
+          <div>
+            <label class="block text-gray-700 mb-3 text-lg">
+              취업 상태
+            </label>
+            <select
+              v-model="formData.employmentStatus"
+              class="w-full px-5 py-4 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-lg"
+            >
+              <option value="">선택해 주세요</option>
+              <option v-for="opt in employmentOptions" :key="opt.value" :value="opt.value">
+                {{ opt.label }}
+              </option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-gray-700 mb-3 text-lg">
+              학력
+            </label>
+            <select
+              v-model="formData.educationLevel"
+              class="w-full px-5 py-4 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-lg"
+            >
+              <option value="">선택해 주세요</option>
+              <option v-for="opt in educationOptions" :key="opt.value" :value="opt.value">
+                {{ opt.label }}
+              </option>
+            </select>
+          </div>
+        </div>
+
+        <div class="grid md:grid-cols-2 gap-8">
+          <div>
+            <label class="block text-gray-700 mb-3 text-lg">
+              전공
+            </label>
+            <input
+              type="text"
+              v-model="formData.major"
+              class="w-full px-5 py-4 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-lg"
+              placeholder="예) 컴퓨터공학"
+            />
+          </div>
+        </div>
+
+        <!-- Special targets -->
+        <div class="p-8 bg-gradient-to-br from-blue-50 to-cyan-50 rounded-2xl border border-blue-100">
+          <label class="block text-gray-700 mb-4 text-lg">
+            지원대상 (중복 선택 가능)
+          </label>
+          <div class="flex flex-wrap gap-3">
+            <button
+              type="button"
+              @click="clearSpecialTargets"
+              :class="[
+                'px-4 py-2 rounded-xl transition-all text-base',
+                formData.specialTargets.length === 0
+                  ? 'bg-blue-500 text-white shadow-md scale-105'
+                  : 'bg-white text-gray-700 hover:bg-gray-50 border-2 border-gray-200'
+              ]"
+            >
+              해당 없음
+            </button>
+            <button
+              v-for="target in specialTargetOptions"
+              :key="target"
+              type="button"
+              @click="toggleSpecialTarget(target)"
+              :class="[
+                'px-4 py-2 rounded-xl transition-all text-base',
+                formData.specialTargets.includes(target)
+                  ? 'bg-blue-500 text-white shadow-md scale-105'
+                  : 'bg-white text-gray-700 hover:bg-gray-50 border-2 border-gray-200'
+              ]"
+            >
+              {{ target }}
+            </button>
+          </div>
+        </div>
+
         <!-- Interests -->
-        <div class="mb-10 p-8 bg-gradient-to-br from-blue-50 to-cyan-50 rounded-2xl border border-blue-100">
+        <div class="p-8 bg-gradient-to-br from-blue-50 to-cyan-50 rounded-2xl border border-blue-100">
           <label class="block text-gray-700 mb-4 text-lg">
             관심 분야 <span class="text-red-500">*</span>
             <span class="text-gray-500 ml-3">(중복 선택 가능)</span>
@@ -94,7 +235,7 @@
               {{ interest }}
             </button>
           </div>
-          <p v-if="formData.interests.length === 0" class="text-red-500 mt-3 text-sm">최소 1개 이상 선택해 주세요</p>
+          <p v-if="formData.interests.length === 0" class="text-red-500 mt-3 text-sm">최소 1개 이상 선택해 주세요.</p>
         </div>
 
         <!-- Submit Button -->
@@ -143,16 +284,42 @@ const cloneProfile = (profile) => {
     age: '',
     region: '',
     interests: [],
+    gender: '',
+    householdIncome: '',
+    familySize: '',
+    incomeQuintile: '',
+    employmentStatus: '',
+    educationLevel: '',
+    major: '',
+    specialTargets: [],
   };
-  return { ...base, ...(profile || {}), interests: [...(profile?.interests || base.interests)] };
+  return {
+    ...base,
+    ...(profile || {}),
+    interests: [...(profile?.interests || base.interests)],
+    specialTargets: [...(profile?.specialTargets || base.specialTargets)],
+  };
 };
 
 const formData = ref(cloneProfile(userStore.profile));
 const message = ref('');
 const messageType = ref('success');
 
-const interestOptions = ['취업', '주거', '교육', '취업지원', '문화', '건강', '지역', '창업'];
-const regionOptions = ['서울', '경기', '인천', '부산', '대구', '광주', '대전', '울산', '세종', '강원', '충북', '충남', '전북', '전남', '경북', '경남', '제주', '비수도권', '전국'];
+const interestOptions = ['취업', '주거', '교육', '문화', '건강', '지역', '창업'];
+const regionOptions = ['서울', '경기', '인천', '부산', '대구', '광주', '대전', '울산', '세종', '강원', '충북', '충남', '전북', '전남', '경북', '경남', '제주', '기타'];
+const employmentOptions = [
+  { label: '미취업', value: 'unemployed' },
+  { label: '재직자', value: 'employed' },
+  { label: '학생', value: 'student' },
+  { label: '창업/자영업', value: 'self_employed' },
+];
+const educationOptions = [
+  { label: '고졸 이하', value: 'highschool' },
+  { label: '전문대', value: 'college' },
+  { label: '대학교', value: 'university' },
+  { label: '대학원 이상', value: 'graduate' },
+];
+const specialTargetOptions = ['국가유공자', '장애인', '보훈가족', '한부모', '저소득층', '다자녀', '군인·전역예정', '농어업인'];
 
 onMounted(async () => {
   await userStore.loadProfile();
@@ -168,7 +335,7 @@ watch(
 );
 
 const completionPercentage = computed(() => {
-  const requiredFields = ['age', 'region', 'interests'];
+  const requiredFields = ['age', 'region', 'interests', 'gender', 'employmentStatus', 'educationLevel'];
   const total = requiredFields.length;
   const filled = requiredFields.filter((k) => {
     const val = formData.value[k];
@@ -185,6 +352,19 @@ const toggleInterest = (interest) => {
   } else {
     formData.value.interests.push(interest);
   }
+};
+
+const toggleSpecialTarget = (target) => {
+  const index = formData.value.specialTargets.indexOf(target);
+  if (index > -1) {
+    formData.value.specialTargets.splice(index, 1);
+  } else {
+    formData.value.specialTargets.push(target);
+  }
+};
+
+const clearSpecialTargets = () => {
+  formData.value.specialTargets = [];
 };
 
 const handleSubmit = async () => {
