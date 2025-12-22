@@ -4,15 +4,17 @@ import { fetchPolicies, fetchPolicyById, fetchRecommendations } from '../api/cli
 import { mockPolicies } from '../data/mockPolicies';
 
 const toPeriod = (start, end) => {
-  if (!start && !end) return '';
+  if (!start && !end) return '제한없음';
   if (start && end) return `${start} ~ ${end}`;
-  return start || end || '';
+  return start || end || '제한없음';
 };
 
 const toAgeRange = (minAge, maxAge) => {
+  if (minAge === '제한없음' || maxAge === '제한없음') return '제한없음';
   if (!minAge && !maxAge) return '제한없음';
   if (minAge && maxAge) return `${minAge}-${maxAge}`;
-  return minAge ? `${minAge}+` : `${maxAge}-`;
+  if (minAge) return `${minAge}+`;
+  return `${maxAge}-`;
 };
 
 const cleanList = (items = []) => {
@@ -25,19 +27,24 @@ const cleanList = (items = []) => {
     seen.add(value);
     result.push(value);
   });
-  return result.length ? result : ['제한없음'];
+  return result;
 };
 
 const transformPolicy = (p) => {
   if (!p) return null;
 
-  const eligibility = cleanList([
-    ...(p.employment_requirements || []),
-    ...(p.education_requirements || []),
-    ...(p.major_requirements || []),
-    ...(p.income_requirements || []),
-    ...(p.special_target || []),
-  ]);
+  const eligibilitySections = [
+    { label: '취업상황 ', values: p.employment_requirements || p.employment || [] },
+    { label: '학력 ', values: p.education_requirements || p.education || [] },
+    { label: '전공 ', values: p.major_requirements || p.major || [] },
+    { label: '지원대상 ', values: p.special_target || [] },
+  ];
+
+  const eligibility = eligibilitySections.flatMap((section) => {
+    const cleaned = cleanList(section.values);
+    if (!cleaned.length) return [`${section.label} | 제한없음`];
+    return cleaned.map((v) => `${section.label}: ${v}`);
+  });
 
   return {
     id: p.id ?? p.source_id ?? p.sourceId ?? String(Math.random()),

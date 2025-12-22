@@ -58,7 +58,9 @@
               </div>
               <div>
                 <p class="text-gray-500 mb-1">연령</p>
-                <p class="text-gray-900 text-lg">{{ policy.ageRange }}세</p>
+                <p class="text-gray-900 text-lg">
+                  {{ policy.ageRange === '제한없음' ? '제한없음' : `${policy.ageRange}세` }}
+                </p>
               </div>
             </div>
           </div>
