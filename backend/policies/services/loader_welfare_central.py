@@ -25,7 +25,7 @@ def split_text(value, sep=","):
 
 
 # =========================
-# 텍스트 -> 리스트 변환
+# 문의처, 관련 링크 -> 리스트 변환
 # =========================
 def build_apply_links(site_list):
     """
@@ -41,8 +41,19 @@ def build_apply_links(site_list):
         if url:
             results.append({
                 "name": name,
-                "url": url,
+                "contact": url,
             })
+    return results
+
+def target_specific(info):
+    if not info:
+        return []
+    
+    results = []
+    results.extend({
+        "대상자상세": info.get("대상자상세"),
+        "선정기준": info.get("선정기준")
+        })
     return results
 
 
@@ -66,10 +77,10 @@ def parse_welfare_central_policy(item):
     keywords.extend(split_text(item.get("생애주기")))
 
     # 혜택 유형
-    benefit_type = item.get("제공유형")
+    policy_type = item.get("제공유형")
 
     # 혜택 상세
-    benefit_detail = item.get("급여서비스내용")
+    policy_detail = item.get("급여서비스내용")
 
     return {
         # =====================
@@ -109,7 +120,7 @@ def parse_welfare_central_policy(item):
         # =====================
         # 6. 취업 상태
         # =====================
-        "employment_status": [],
+        "employment": [],
 
         # =====================
         # 7. 조건 정보
@@ -117,16 +128,18 @@ def parse_welfare_central_policy(item):
         "education": [],
         "major": [],
         "special_target": [item.get("가구유형")] if item.get("가구유형") else [],
+        "target_detail": target_specific(item),
 
         # =====================
         # 8. 운영 / 지원 정보
         # =====================
         "provider": item.get("소관부처명"),
         "apply_method": item.get("지원주기")+"(으)로 신청",
-        "apply_links": build_apply_links(item.get("사이트목록")),
+        "detail_links": build_apply_links(item.get("사이트목록")),
+        "detail_contact": build_apply_links(item.get("문의처목록")),
 
-        "benefit_type": benefit_type,
-        "benefit_detail": benefit_detail,
+        "policy_type": policy_type,
+        "policy_detail": policy_detail,
 
         # =====================
         # 9. 신청 가능 여부

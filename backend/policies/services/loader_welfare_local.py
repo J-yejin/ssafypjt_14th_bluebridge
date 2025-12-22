@@ -23,23 +23,26 @@ def split_text(value, sep=","):
         return []
     return [v.strip() for v in value.split(sep) if v.strip()]
 
-# ==========================
-# special_target 처리 유틸
-# ==========================
-def build_special_target(item):
+# =========================
+# 문의처, 관련 링크 -> 리스트 변환
+# =========================
+def build_apply_links(site_list):
     """
-    지원대상 + 지원대상내용 → special_target 리스트
+    사이트목록 → [{name, url}, ...]
     """
-    target = item.get("지원대상")
-    detail = item.get("지원대상내용")
-
-    if not target and not detail:
+    if not site_list or not isinstance(site_list, list):
         return []
 
-    return [{
-        "title": target,
-        "description": detail,
-    }]
+    results = []
+    for site in site_list:
+        url = site.get("상세정보")
+        name = site.get("상세명")
+        if url:
+            results.append({
+                "name": name,
+                "contact": url,
+            })
+    return results
 
 # =========================
 # Welfare Local Parser
@@ -59,18 +62,22 @@ def parse_welfare_local_policy(item):
         applicable_regions = []
 
     # -------------------------
+    # 카테고리
+    # -------------------------
+    category = item.get("관심주제")
+    
+    # -------------------------
     # 키워드 구성
     # -------------------------
-    keywords = (
-        split_text(item.get("관심주제")) +
-        split_text(item.get("생애주기")) +
-        ([item.get("지원대상")] if item.get("지원대상") else [])
-    )
+    keywords = []
+    if category:
+        keywords.append(category)
+    keywords.extend(split_text(item.get("생애주기")))
+    
+    detail_links = []
+    detail_links.extend({"복지로 사이트": item.get("상세링크")})
+    detail_links.extend(build_apply_links(item.get("관련사이트")))
 
-    # -------------------------
-    # 신청 방법
-    # -------------------------
-    apply_method = ", ".join(split_text(item.get("신청방법")))
 
     return {
         # =====================
@@ -91,7 +98,7 @@ def parse_welfare_local_policy(item):
         # =====================
         # 3. 카테고리
         # =====================
-        "category": item.get("관심주제"),
+        "category": category,
 
         # =====================
         # 4. 지역
@@ -110,24 +117,26 @@ def parse_welfare_local_policy(item):
         # =====================
         # 6. 취업 상태
         # =====================
-        "employment_status": [],
+        "employment": [],
 
         # =====================
         # 7. 조건 정보
         # =====================
         "education": [],
         "major": [],
-        "special_target": build_special_target(item),
+        "special_target": item.get("지원대상"),
+        "target_detail": [item.get("지원대상내용"), item.get("선정기준")],
 
         # =====================
         # 8. 운영 / 지원 정보
         # =====================
         "provider": item.get("담당부서"),
-        "apply_method": item.get("지원주기") + "주기로" + apply_method,
-        "apply_links": item.get("상세링크") or item.get("관련사이트"),
+        "apply_method": item.get("지원주기") + "주기로" + item.get("신청방법상세"),
+        "detail_links": detail_links,
+        "detail_contact": build_apply_links(item.get("문의처")),
 
-        "benefit_type": item.get("서비스유형"),
-        "benefit_detail": item.get("지원내용"),
+        "policy_type": item.get("서비스유형"),
+        "policy_detail": item.get("지원내용"),
 
         # =====================
         # 9. 신청 가능 여부

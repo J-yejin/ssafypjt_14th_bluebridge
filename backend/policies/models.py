@@ -51,7 +51,7 @@ class Policy(models.Model):
     # =========================
     # 7. 필터 ⑤ 취업 상태 (선택)
     # =========================
-    employment_status = models.JSONField(default=list, blank=True)
+    employment = models.JSONField(default=list, blank=True)
     # ["미취업자", "재직자"]
 
     # =========================
@@ -60,16 +60,18 @@ class Policy(models.Model):
     education = models.JSONField(default=list, blank=True)
     major = models.JSONField(default=list, blank=True)
     special_target = models.JSONField(default=list, blank=True)
-
+    target_detail = models.JSONField(default=list, blank=True)
+    
     # =========================
     # 9. 운영 / 지원 정보
     # =========================
     provider = models.CharField(max_length=200, null=True, blank=True)
-    apply_method = models.CharField(max_length=200, null=True, blank=True)
-    apply_links = models.JSONField(default=list, blank=True)
+    apply_method = models.TextField(null=True, blank=True)
+    detail_links = models.JSONField(default=list, blank=True)
+    detail_contact = models.JSONField(default=list, blank=True)
 
-    benefit_type = models.CharField(max_length=50, null=True, blank=True) # 현금 / 교육 / 서비스 등
-    benefit_detail = models.TextField(null=True, blank=True)
+    policy_type = models.CharField(max_length=50, null=True, blank=True) # 현금 / 교육 / 서비스 등
+    policy_detail = models.TextField(null=True, blank=True)
 
     # =========================
     # 10. 필터 ⑥ 신청 가능 여부 (선택)

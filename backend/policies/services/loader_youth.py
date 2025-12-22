@@ -67,7 +67,7 @@ def parse_youth_policy(item):
     # -------------------------
     # 지역 처리
     # -------------------------
-    applicable_regions = map_region_codes(item.get("지역코드"))
+    applicable_regions = map_region_codes(item.get("정책거주지역코드"))
 
     if not applicable_regions:
         region_scope = "NATIONWIDE"
@@ -82,25 +82,29 @@ def parse_youth_policy(item):
     # -------------------------
     # 조건 매핑
     # -------------------------
-    employment_status = map_condition_codes(
-        item.get("취업요건"), "취업요건"
+    employment = map_condition_codes(
+        item.get("정책취업요건코드"), "취업요건"
     )
 
     education = map_condition_codes(
-        item.get("학력요건"), "학력요건"
+        item.get("정책학력요건코드"), "학력요건"
     )
 
     major = map_condition_codes(
-        item.get("전공요건"), "전공요건"
+        item.get("정책전공요건코드"), "전공요건"
     )
 
     # -------------------------
     # 정책 제공방법 → benefit_type
     # -------------------------
-    benefit_types = map_condition_codes(
-        item.get("정책제공방법"), "정책제공방법"
+    benefit_type = map_condition_codes(
+        item.get("정책제공방법코드"), "정책제공방법"
     )
-    benefit_type = benefit_types[0] if benefit_types else None
+    
+    special_target = map_condition_codes(
+        item.get("정책특화요건코드"), "특화요건"
+    )
+    # benefit_type = benefit_types[0] if benefit_types else None
 
     return {
         # =====================
@@ -114,14 +118,14 @@ def parse_youth_policy(item):
         # 2. 기본 정보
         # =====================
         "title": item.get("정책명"),
-        "summary": item.get("정책설명"),
+        "summary": item.get("정책설명내용"),
         "search_summary": None,
-        "keywords": split_codes(item.get("정책키워드")),
+        "keywords": split_codes(item.get("정책키워드명")),
 
         # =====================
         # 3. 카테고리
         # =====================
-        "category": item.get("대분류"),
+        "category": item.get("정책대분류명"),
 
         # =====================
         # 4. 지역
@@ -134,30 +138,32 @@ def parse_youth_policy(item):
         # =====================
         # 5. 연령
         # =====================
-        "min_age": int(item["최소연령"]) if item.get("최소연령") else None,
-        "max_age": int(item["최대연령"]) if item.get("최대연령") else None,
+        "min_age": int(item["지원대상최소연령"]) if item.get("지원대상최소연령") else None,
+        "max_age": int(item["지원대상최대연령"]) if item.get("지원대상최대연령") else None,
 
         # =====================
         # 6. 취업 상태
         # =====================
-        "employment_status": employment_status,
+        "employment": employment,
 
         # =====================
         # 7. 조건 정보
         # =====================
         "education": education,
         "major": major,
-        "special_target": [],
+        "special_target": [special_target],
+        "target_detail": item.get("추가신청자격조건내용") +"/" + item.get("참여제외대상내용"),
 
         # =====================
         # 8. 운영 / 지원 정보
         # =====================
-        "provider": item.get("주관기관명"),
+        "provider": item.get("주관기관코드명"),
         "apply_method": None,
-        "apply_links": item.get("신청URL"),
-
-        "benefit_type": benefit_type,
-        "benefit_detail": item.get("지원내용"),
+        "detail_links": item.get("참고URL주소1"),
+        "detail_contact" : [],
+            
+        "policy_type": benefit_type,
+        "policy_detail": item.get("정책지원내용"),
 
         # =====================
         # 9. 신청 가능 여부
