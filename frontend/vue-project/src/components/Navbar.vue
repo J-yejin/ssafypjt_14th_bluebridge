@@ -48,6 +48,17 @@
             <span>정책 추천</span>
           </router-link>
 
+          <router-link
+            to="/boards"
+            :class="[
+              'flex items-center gap-2 px-5 py-2.5 rounded-lg transition-all',
+              isActive('/boards') ? 'bg-blue-50 text-blue-700' : 'text-gray-600 hover:bg-blue-50/50 hover:text-blue-600'
+            ]"
+          >
+            <Search :size="16" />
+            <span>게시글</span>
+          </router-link>
+
           <div class="w-px h-6 bg-gray-200 mx-2" />
 
           <template v-if="isLoggedIn">
@@ -61,8 +72,14 @@
               ]"
             >
               <User :size="16" />
-              <span>프로필</span>
+              <span>{{ profileLabel }}</span>
             </router-link>
+            <button
+              class="px-4 py-2.5 rounded-lg text-gray-700 hover:bg-blue-50 transition-all border border-gray-200"
+              @click="handleLogout"
+            >
+              로그아웃
+            </button>
           </template>
           <template v-else>
             <router-link
@@ -85,13 +102,23 @@
 </template>
 
 <script setup>
-import { useRoute } from 'vue-router';
+import { useRoute, useRouter } from 'vue-router';
 import { computed } from 'vue';
 import { Search, Sparkles, User, Home } from 'lucide-vue-next';
+import { useAuthStore } from '../stores/authStore';
+import { useUserStore } from '../stores/userStore';
 
 const route = useRoute();
+const router = useRouter();
 const isActive = (path) => computed(() => route.path === path).value;
-const isLoggedIn = computed(() => {
-  return Boolean(localStorage.getItem('access')) || Boolean(localStorage.getItem('token'));
-});
+const authStore = useAuthStore();
+const userStore = useUserStore();
+const isLoggedIn = computed(() => authStore.isAuthenticated);
+const profileLabel = computed(() => (userStore.isProfileComplete ? '마이 프로필' : '프로필'));
+
+const handleLogout = () => {
+  authStore.clearTokens();
+  userStore.resetProfile();
+  router.push('/');
+};
 </script>

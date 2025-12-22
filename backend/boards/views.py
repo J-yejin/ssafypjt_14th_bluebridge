@@ -66,6 +66,8 @@ def board_detail(request, pk):
     board = get_object_or_404(Board.objects.select_related("user", "policy"), pk=pk)
 
     if request.method == "GET":
+        if not request.user.is_authenticated:
+            return Response({"detail": "Authentication required"}, status=401)
         Board.objects.filter(pk=board.pk).update(views=F("views") + 1)
         board.refresh_from_db()
         serializer = BoardDetailSerializer(board)

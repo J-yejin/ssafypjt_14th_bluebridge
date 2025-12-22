@@ -13,7 +13,9 @@ class Policy(models.Model):
     # =========================
     policy_type = models.CharField(
         max_length=30,
-        choices=[("YOUTH", "청년정책"), ("WELFARE", "복지서비스")]
+        choices=[("YOUTH", "청년정책"), ("WELFARE", "복지서비스")],
+        null=True, 
+        blank=True
     )
 
     # =========================
@@ -40,7 +42,7 @@ class Policy(models.Model):
     )  # 전국 정책인가, 지역 정책인가
     region_sido = models.CharField(max_length=50, null=True, blank=True)  # 시/도 단위, 필터 기준
     region_sigungu = models.CharField(max_length=50, null=True, blank=True) # 시/군/구 단위, 대표 지역
-    applicable_regions = models.JSONField(default=list, blank=True)  # 실제로 적용 가능한 모든 지역 (텍스트, 다중)
+    applicable_regions = models.JSONField(default=list)  # 실제로 적용 가능한 모든 지역 (텍스트, 다중)
 
     # =========================
     # 6. 필터 ④ 연령 (필수)
