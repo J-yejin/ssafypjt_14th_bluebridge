@@ -1,7 +1,7 @@
 <template>
   <div class="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 via-sky-50 to-white px-4 py-12">
-    <div class="w-full max-w-2xl bg-white rounded-3xl shadow-2xl border border-blue-100 p-8 md:p-12">
-      <div class="text-center mb-6">
+    <div class="w-full max-w-2xl bg-white rounded-[28px] shadow-2xl border border-blue-100 p-8 md:p-12">
+      <div class="text-center mb-8">
         <p class="text-sm text-gray-500 font-medium">{{ currentIndex + 1 }} / {{ steps.length }}</p>
         <h1 class="text-2xl md:text-3xl font-semibold text-blue-900 mt-2">{{ currentStep.title }}</h1>
         <p v-if="currentStep.caption" class="text-gray-500 mt-2 text-sm">{{ currentStep.caption }}</p>
@@ -15,12 +15,7 @@
             :key="option.value"
             type="button"
             @click="handleChoice(option.value)"
-            :class="[
-              'w-full py-3 px-4 rounded-xl border transition-all',
-              formData[currentStep.key] === option.value
-                ? 'border-blue-500 bg-blue-50 text-blue-700 shadow-sm'
-                : 'border-gray-200 bg-white text-gray-700 hover:bg-gray-50'
-            ]"
+            :class="['option-button', formData[currentStep.key] === option.value ? 'option-button--active' : '']"
           >
             {{ option.label }}
           </button>
@@ -34,36 +29,36 @@
             :placeholder="currentStep.placeholder"
             :min="currentStep.min"
             :max="currentStep.max"
-            class="w-full py-3 px-4 rounded-xl border-2 border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            class="input-field"
           />
         </div>
 
         <!-- 단일 셀렉트 -->
-        <div v-else-if="currentStep.type === 'select'" class="space-y-2">
-          <select
-            v-model="formData[currentStep.key]"
-            class="w-full py-3 px-4 rounded-xl border-2 border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-          >
-            <option value="">{{ currentStep.placeholder || '선택해 주세요' }}</option>
-            <option v-for="option in currentStep.options" :key="option.value || option" :value="option.value || option">
+        <div v-else-if="currentStep.type === 'select'" class="space-y-3">
+          <div class="space-y-2">
+            <button
+              v-for="option in currentStep.options"
+              :key="option.value || option"
+              type="button"
+              @click="handleChoice(option.value || option)"
+              :class="[
+                'option-button',
+                formData[currentStep.key] === (option.value || option) ? 'option-button--active' : ''
+              ]"
+            >
               {{ option.label || option }}
-            </option>
-          </select>
+            </button>
+          </div>
         </div>
 
         <!-- 다중 선택 -->
         <div v-else-if="currentStep.type === 'multi'" class="space-y-3">
-          <div class="flex flex-wrap gap-2">
+          <div class="space-y-2">
             <button
               v-if="currentStep.allowNone"
               type="button"
               @click="clearMulti(currentStep.key)"
-              :class="[
-                'px-3 py-2 rounded-xl text-sm border transition-all',
-                formData[currentStep.key].length === 0
-                  ? 'border-blue-500 bg-blue-50 text-blue-700'
-                  : 'border-gray-200 bg-white text-gray-700 hover:bg-gray-50'
-              ]"
+              :class="['option-button', formData[currentStep.key].length === 0 ? 'option-button--active' : '']"
             >
               해당 없음
             </button>
@@ -73,10 +68,8 @@
               type="button"
               @click="toggleMulti(currentStep.key, option)"
               :class="[
-                'px-3 py-2 rounded-xl text-sm border transition-all',
-                formData[currentStep.key].includes(option)
-                  ? 'border-blue-500 bg-blue-50 text-blue-700'
-                  : 'border-gray-200 bg-white text-gray-700 hover:bg-gray-50'
+                'option-button',
+                formData[currentStep.key].includes(option) ? 'option-button--active' : ''
               ]"
             >
               {{ option }}
@@ -88,12 +81,12 @@
         </div>
       </div>
 
-      <div class="mt-8 flex items-center justify-between">
+      <div class="mt-10 flex items-center justify-between">
         <button
           type="button"
           @click="prevStep"
           :disabled="currentIndex === 0"
-          class="px-5 py-3 rounded-xl border border-gray-200 text-gray-600 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+          class="nav-button nav-button--ghost"
         >
           이전
         </button>
@@ -101,7 +94,7 @@
           type="button"
           @click="nextStep"
           :disabled="!canProceed"
-          class="px-6 py-3 rounded-xl bg-gradient-to-r from-blue-500 to-cyan-500 text-white shadow-md hover:shadow-lg transition disabled:opacity-40 disabled:cursor-not-allowed"
+          class="nav-button nav-button--primary"
         >
           {{ isLastStep ? '완료' : '다음' }}
         </button>
@@ -263,20 +256,19 @@ const saveAndFinish = async () => {
     ? Number(formData.value.householdIncome) * 10000
     : null;
   userStore.updateProfile({
-    gender: formData.value.gender,
-    employmentStatus: formData.value.employmentStatus,
-    educationLevel: formData.value.educationLevel,
-    major: formData.value.major,
+    gender: formData.value.gender || '',
+    employmentStatus: formData.value.employmentStatus || '',
+    educationLevel: formData.value.educationLevel || '',
+    major: formData.value.major || '',
     householdIncome: incomeInWon,
-    familySize: formData.value.familySize || null,
-    specialTargets: formData.value.specialTargets,
+    familySize: formData.value.familySize ? Number(formData.value.familySize) : null,
+    specialTargets: formData.value.specialTargets || [],
   });
   await userStore.saveProfile();
   router.push('/recommend');
 };
 
 onMounted(async () => {
-  // 로그인 안 되어 있으면 로그인 페이지로
   if (!authStore.isAuthenticated) {
     router.push('/login');
     return;
@@ -297,7 +289,66 @@ onMounted(async () => {
 </script>
 
 <style scoped>
-button {
-  font-weight: 600;
+.option-button {
+  width: 100%;
+  padding: 14px 16px;
+  border-radius: 16px;
+  border: 1.5px solid #e5e7eb;
+  background: #ffffff;
+  color: #0f172a;
+  font-weight: 700;
+  transition: all 0.12s ease;
+}
+
+.option-button--active {
+  border-color: #3b82f6;
+  background: linear-gradient(135deg, #e0efff 0%, #f4f8ff 100%);
+  color: #1d4ed8;
+  box-shadow: 0 8px 20px rgba(59, 130, 246, 0.15);
+}
+
+.option-button:hover {
+  border-color: #bfdbfe;
+  background: #f8fbff;
+}
+
+.input-field {
+  width: 100%;
+  padding: 14px 16px;
+  border-radius: 16px;
+  border: 1.5px solid #e5e7eb;
+  background: #ffffff;
+  transition: all 0.12s ease;
+}
+
+.input-field:focus {
+  outline: none;
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
+}
+
+.nav-button {
+  padding: 12px 22px;
+  border-radius: 14px;
+  font-weight: 700;
+  transition: all 0.12s ease;
+}
+
+.nav-button--ghost {
+  border: 1px solid #e5e7eb;
+  color: #334155;
+  background: #fff;
+}
+
+.nav-button--primary {
+  background: linear-gradient(135deg, #0ea5e9 0%, #3b82f6 100%);
+  color: #fff;
+  box-shadow: 0 10px 25px rgba(14, 165, 233, 0.25);
+}
+
+.nav-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  box-shadow: none;
 }
 </style>
