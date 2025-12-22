@@ -128,8 +128,8 @@ const handleSignup = async () => {
     const loginResp = await login({ username: username.value, password: password.value });
     authStore.setTokens({ access: loginResp?.access, refresh: loginResp?.refresh });
     authStore.setUsername(username.value);
-    // 기본 이동: 홈으로 이동, 이후 사용자가 원하는 경우 프로필 페이지로 진입
-    router.push('/');
+    // 기본 이동: 온보딩(정책 추천을 위한 프로필 입력) 페이지로 이동
+    router.push('/onboarding');
   } catch (e) {
     error.value = e.message || '회원가입 중 오류가 발생했습니다';
   } finally {

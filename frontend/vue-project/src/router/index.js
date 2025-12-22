@@ -9,6 +9,7 @@ import SignupView from '../views/SignupView.vue';
 import BoardListView from '../views/BoardListView.vue';
 import BoardDetailView from '../views/BoardDetailView.vue';
 import BoardCreateView from '../views/BoardCreateView.vue';
+import OnboardingWizard from '../views/OnboardingWizard.vue';
 
 const routes = [
   { path: '/', name: 'home', component: LandingPage },
@@ -16,6 +17,7 @@ const routes = [
   { path: '/policy/:id', name: 'policy-detail', component: PolicyDetail },
   { path: '/recommend', name: 'recommend', component: PolicyRecommend },
   { path: '/profile', name: 'profile', component: ProfilePage },
+  { path: '/onboarding', name: 'onboarding', component: OnboardingWizard },
   { path: '/boards', name: 'boards', component: BoardListView },
   { path: '/boards/new', name: 'board-create', component: BoardCreateView },
   { path: '/boards/:id', name: 'board-detail', component: BoardDetailView },
