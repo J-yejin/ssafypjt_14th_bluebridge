@@ -94,8 +94,8 @@ input {
   outline: none;
 }
 input:focus {
-  border-color: #2563eb;
-  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
+  border-color: #59a760;
+  box-shadow: 0 0 0 3px rgba(89, 167, 96, 0.18);
 }
 .btn {
   border: none;
@@ -106,9 +106,9 @@ input:focus {
   transition: transform 0.12s ease, box-shadow 0.12s ease, background 0.12s ease;
 }
 .btn.primary {
-  background: #0f60ff;
-  color: #fff;
-  box-shadow: 0 10px 25px rgba(15, 96, 255, 0.35);
+  background: linear-gradient(135deg, #9fdcff 0%, #5cbcff 100%);
+  color: #0b2f4a;
+  box-shadow: 0 10px 25px rgba(92, 188, 255, 0.35);
 }
 .btn:disabled {
   opacity: 0.6;
@@ -124,7 +124,7 @@ input:focus {
   color: #475569;
 }
 .hint a {
-  color: #2563eb;
+  color: #3f8c4f;
   text-decoration: none;
 }
 </style>

@@ -33,6 +33,73 @@ const cleanList = (items = []) => {
 const transformPolicy = (p) => {
   if (!p) return null;
 
+  const mapRegionToBucket = (region = '') => {
+    const r = (region || '').trim();
+    if (!r) return '기타';
+    if (r.includes('전국')) return '전국';
+    const topLevel = [
+      '서울특별시',
+      '부산광역시',
+      '대구광역시',
+      '인천광역시',
+      '광주광역시',
+      '대전광역시',
+      '울산광역시',
+      '세종특별자치시',
+      '경기도',
+      '강원특별자치도',
+      '충청북도',
+      '충청남도',
+      '전라북도',
+      '전라남도',
+      '경상북도',
+      '경상남도',
+      '제주특별자치도',
+    ];
+    const found = topLevel.find((name) => r.includes(name));
+    return found || '기타';
+  };
+
+  const mapToBucket = (value = '') => {
+    const v = value.trim();
+    const bucketMap = {
+      일자리: '일자리',
+      취업: '일자리',
+      창업: '일자리',
+      교육: '교육',
+      '문화·여가': '복지문화',
+      복지문화: '복지문화',
+      신체건강: '건강',
+      정신건강: '건강',
+      생활지원: '생활지원',
+      보육: '생활지원',
+      '보호·돌봄': '생활지원',
+      서민금융: '재무/법률',
+      법률: '재무/법률',
+      '안전·위기': '위기·안전',
+      '임신·출산': '가족/권리',
+      '입양·위탁': '가족/권리',
+      참여권리: '가족/권리',
+      주거: '생활지원',
+    };
+    return bucketMap[v] || '';
+  };
+
+  const rawCategory = p.category || '';
+  const rawCategoryParts = rawCategory
+    .split(',')
+    .map((v) => v.trim())
+    .filter(Boolean);
+  const mappedCategories = cleanList(rawCategoryParts.map(mapToBucket).filter(Boolean));
+
+  let category = mappedCategories[0];
+  if (!category) {
+    category = p.source === 'youth' ? '기타' : '기타';
+  }
+
+  const region = p.region_sigungu || p.region_sido || '';
+  const regionBucket = mapRegionToBucket(region);
+
   const eligibilitySections = [
     { label: '취업상황 ', values: p.employment_requirements || p.employment || [] },
     { label: '학력 ', values: p.education_requirements || p.education || [] },
@@ -49,21 +116,19 @@ const transformPolicy = (p) => {
   return {
     id: p.id ?? p.source_id ?? p.sourceId ?? String(Math.random()),
     title: p.title || '',
-    category: p.source || '기타',
+    category,
     organization: p.provider || '',
     description: p.summary || '',
     eligibility,
     benefits: p.apply_method || '',
     applicationPeriod: toPeriod(p.start_date, p.end_date),
     ageRange: toAgeRange(p.min_age, p.max_age),
-    region: p.region_sigungu || p.region_sido || '',
+    region,
+    regionBucket,
     employmentStatus: p.employment_requirements || [],
-    tags: [
-      ...(p.special_target || []),
-      ...(p.major_requirements || []),
-      ...(p.education_requirements || []),
-      p.source || '',
-    ].filter(Boolean),
+    tags: cleanList([
+      category,
+    ]),
     detailLink: p.detail_link || '',
     raw: p,
   };

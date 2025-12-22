@@ -99,11 +99,10 @@
             <h2 class="text-blue-900 mb-6 text-3xl border-l-4 border-blue-500 pl-6">관련 키워드</h2>
             <div class="flex flex-wrap gap-3 pl-6">
               <span
-                v-for="tag in policy.tags"
-                :key="tag"
+                v-if="policy.category"
                 class="px-5 py-2.5 bg-blue-100 text-blue-700 rounded-xl text-lg hover:bg-blue-200 transition-colors cursor-pointer"
               >
-                #{{ tag }}
+                #{{ policy.category }}
               </span>
             </div>
           </section>
