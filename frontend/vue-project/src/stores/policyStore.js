@@ -15,16 +15,29 @@ const toAgeRange = (minAge, maxAge) => {
   return minAge ? `${minAge}+` : `${maxAge}-`;
 };
 
+const cleanList = (items = []) => {
+  const seen = new Set();
+  const result = [];
+  items.forEach((item) => {
+    const value = (item || '').toString().trim();
+    if (!value || value === '-/-') return;
+    if (seen.has(value)) return;
+    seen.add(value);
+    result.push(value);
+  });
+  return result.length ? result : ['제한없음'];
+};
+
 const transformPolicy = (p) => {
   if (!p) return null;
 
-  const eligibility = [
+  const eligibility = cleanList([
     ...(p.employment_requirements || []),
     ...(p.education_requirements || []),
     ...(p.major_requirements || []),
     ...(p.income_requirements || []),
     ...(p.special_target || []),
-  ].filter(Boolean);
+  ]);
 
   return {
     id: p.id ?? p.source_id ?? p.sourceId ?? String(Math.random()),
