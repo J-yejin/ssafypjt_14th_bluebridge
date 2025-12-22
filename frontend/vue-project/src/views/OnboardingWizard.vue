@@ -86,7 +86,7 @@
           type="button"
           @click="prevStep"
           :disabled="currentIndex === 0"
-          class="nav-button nav-button--ghost"
+          class="nav-button nav-button--ghost mt-2"
         >
           이전
         </button>
@@ -94,7 +94,7 @@
           type="button"
           @click="nextStep"
           :disabled="!canProceed"
-          class="nav-button nav-button--primary"
+          class="nav-button nav-button--primary mt-2"
         >
           {{ isLastStep ? '완료' : '다음' }}
         </button>
@@ -167,10 +167,10 @@ const steps = [
   },
   {
     key: 'householdIncome',
-    title: '월 소득은 얼마나 되나요? (만원)',
+    title: '월 가구소득은 얼마나 되나요? (단위 : 만원)',
     type: 'input',
     inputType: 'number',
-    placeholder: '예) 350 (모르면 비워두세요)',
+    placeholder: '예) 350 (소득을 알지 못하시면, 건너뛰기 가능합니다.)',
     min: 0,
     required: false,
   },
@@ -179,7 +179,7 @@ const steps = [
     title: '가구원 수는 몇 명인가요?',
     type: 'input',
     inputType: 'number',
-    placeholder: '예) 4 (모르면 비워두세요)',
+    placeholder: '예) 4 ',
     min: 1,
     required: false,
   },
@@ -293,7 +293,7 @@ onMounted(async () => {
   width: 100%;
   padding: 14px 16px;
   border-radius: 16px;
-  border: 1.5px solid #e5e7eb;
+  border: 2px solid #e5e7eb;
   background: #ffffff;
   color: #0f172a;
   font-weight: 700;
@@ -310,6 +310,10 @@ onMounted(async () => {
 .option-button:hover {
   border-color: #bfdbfe;
   background: #f8fbff;
+}
+
+.option-button + .option-button {
+  margin-top: 10px;
 }
 
 .input-field {
