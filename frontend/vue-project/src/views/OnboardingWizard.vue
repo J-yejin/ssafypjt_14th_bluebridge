@@ -151,24 +151,6 @@ const steps = [
     required: false,
   },
   {
-    key: 'age',
-    title: '나이가 어떻게 되세요?',
-    type: 'input',
-    inputType: 'number',
-    placeholder: '예) 25',
-    min: 18,
-    max: 99,
-    required: true,
-  },
-  {
-    key: 'region',
-    title: '거주 지역은 어디인가요?',
-    type: 'select',
-    options: regionOptions,
-    placeholder: '거주 지역을 선택해 주세요',
-    required: true,
-  },
-  {
     key: 'employmentStatus',
     title: '현재 취업 상태를 알려주세요.',
     type: 'select',
@@ -183,12 +165,30 @@ const steps = [
     required: false,
   },
   {
-    key: 'interests',
-    title: '관심 분야를 선택해 주세요.',
-    type: 'multi',
-    options: interestOptions,
-    required: true,
-    allowNone: false,
+    key: 'major',
+    title: '전공이 무엇인가요?',
+    type: 'input',
+    inputType: 'text',
+    placeholder: '예) 컴퓨터공학 (선택 입력)',
+    required: false,
+  },
+  {
+    key: 'householdIncome',
+    title: '월 소득은 얼마나 되나요? (만원)',
+    type: 'input',
+    inputType: 'number',
+    placeholder: '예) 350 (모르면 비워두세요)',
+    min: 0,
+    required: false,
+  },
+  {
+    key: 'familySize',
+    title: '가구원 수는 몇 명인가요?',
+    type: 'input',
+    inputType: 'number',
+    placeholder: '예) 4 (모르면 비워두세요)',
+    min: 1,
+    required: false,
   },
   {
     key: 'specialTargets',
@@ -202,11 +202,11 @@ const steps = [
 
 const formData = ref({
   gender: '',
-  age: '',
-  region: '',
   employmentStatus: '',
   educationLevel: '',
-  interests: [],
+  major: '',
+  householdIncome: '',
+  familySize: '',
   specialTargets: [],
 });
 
@@ -259,13 +259,16 @@ const clearMulti = (key) => {
 };
 
 const saveAndFinish = async () => {
+  const incomeInWon = formData.value.householdIncome
+    ? Number(formData.value.householdIncome) * 10000
+    : null;
   userStore.updateProfile({
     gender: formData.value.gender,
-    age: formData.value.age,
-    region: formData.value.region,
     employmentStatus: formData.value.employmentStatus,
     educationLevel: formData.value.educationLevel,
-    interests: formData.value.interests,
+    major: formData.value.major,
+    householdIncome: incomeInWon,
+    familySize: formData.value.familySize || null,
     specialTargets: formData.value.specialTargets,
   });
   await userStore.saveProfile();
@@ -281,11 +284,13 @@ onMounted(async () => {
   await userStore.loadProfile();
   formData.value = {
     gender: userStore.profile.gender || '',
-    age: userStore.profile.age || '',
-    region: userStore.profile.region || '',
     employmentStatus: userStore.profile.employmentStatus || '',
     educationLevel: userStore.profile.educationLevel || '',
-    interests: [...(userStore.profile.interests || [])],
+    major: userStore.profile.major || '',
+    householdIncome: userStore.profile.householdIncome
+      ? Number(userStore.profile.householdIncome) / 10000
+      : '',
+    familySize: userStore.profile.familySize || '',
     specialTargets: [...(userStore.profile.specialTargets || [])],
   };
 });

@@ -32,16 +32,16 @@
           </div>
           <h2 class="text-blue-900 mb-4 text-3xl">프로필을 완성해주세요</h2>
           <p class="text-gray-600 mb-8 text-lg leading-relaxed">
-            맞춤 추천을 받으려면 기본 프로필 정보를 먼저 입력해 주세요.
+            맞춤 추천을 위해 추가 정보가 필요합니다.
             <br />
-            간단히 입력하면 AI가 바로 추천을 준비합니다.
+            간단히 입력하면 AI가 바로 추천해드려요.
           </p>
           <button
             type="button"
-            @click="goProfile"
+            @click="goOnboarding"
             class="inline-flex items-center gap-3 bg-gradient-to-r from-blue-500 to-cyan-500 text-white px-10 py-4 rounded-2xl hover:shadow-2xl transition-all text-lg shadow-lg"
           >
-            <span>프로필 작성하러 가기</span>
+            <span>프로필 카드 작성</span>
             <ArrowRight :size="24" />
           </button>
         </div>
@@ -52,7 +52,7 @@
     <div v-else class="max-w-[1400px] mx-auto px-8 lg:px-12 py-12">
       <div class="mb-12">
         <h1 class="text-blue-900 mb-3 text-4xl">정책 추천</h1>
-        <p class="text-gray-600 text-lg">나의 프로필을 기반으로 맞춤 정책을 추천해 드릴게요.</p>
+        <p class="text-gray-600 text-lg">프로필을 기반으로 맞춤 정책을 추천해 드립니다.</p>
       </div>
 
       <!-- RAG Search -->
@@ -63,13 +63,13 @@
           </div>
           <div>
             <h2 class="text-blue-900 mb-2 text-2xl">AI 정책 검색</h2>
-            <p class="text-gray-600 text-lg">궁금한 키워드나 조건을 입력하면 AI가 관련 정책을 찾아드려요.</p>
+            <p class="text-gray-600 text-lg">키워드나 조건을 입력하면 AI가 관련 정책을 찾아줍니다.</p>
           </div>
         </div>
         <div class="flex gap-6">
           <input
             type="text"
-            placeholder="예) 청년 창업 보증, 주거 지원, 면접 비용 지원"
+            placeholder="예) 청년 창업 지원, 주거 보증금 대출"
             v-model="ragQuery"
             @keypress.enter="handleRagSearch"
             class="flex-1 px-6 py-4 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent text-lg"
@@ -160,8 +160,8 @@
           <div class="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
             <Search :size="40" class="text-gray-400" />
           </div>
-          <p class="text-gray-500 text-lg mb-2">아직 내 프로필에 맞는 정책을 찾지 못했어요.</p>
-          <p class="text-gray-400">관심 키워드나 지역을 바꿔 검색해 보세요.</p>
+          <p class="text-gray-500 text-lg mb-2">프로필에 맞는 정책을 찾지 못했어요.</p>
+          <p class="text-gray-400">관심사나 지역을 바꿔 검색해 보세요.</p>
         </div>
       </div>
     </div>
@@ -197,7 +197,9 @@ const loadRecommendations = async () => {
   recommendedFromApi.value = results || [];
 };
 
-onMounted(() => {
+onMounted(async () => {
+  if (!authStore.isAuthenticated) return;
+  await userStore.loadProfile();
   policyStore.loadPolicies();
   loadRecommendations();
 });
@@ -250,5 +252,5 @@ const handleRagSearch = () => {
 };
 
 const goLogin = () => router.push('/login');
-const goProfile = () => router.push('/profile');
+const goOnboarding = () => router.push('/onboarding');
 </script>
