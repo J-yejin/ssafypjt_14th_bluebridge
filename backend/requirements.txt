@@ -6,7 +6,7 @@ djangorestframework==3.14.0
 djangorestframework-simplejwt==5.3.1
 
 chromadb==0.4.22            
-
+numpy>=1.26,<2.0
 
 requests==2.31.0
 
