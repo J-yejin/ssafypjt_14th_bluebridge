@@ -8,6 +8,7 @@ from django.db.models import Q
 from rest_framework.pagination import PageNumberPagination
 from rest_framework.permissions import IsAuthenticated
 from django.shortcuts import get_object_or_404
+from datetime import date
 
 from .models import Policy, Wishlist
 from .serializers import PolicySerializer, WishlistCreateSerializer, WishlistItemSerializer
@@ -56,51 +57,100 @@ source·지역·상태 필터를 결합한 deterministic한 API로 설계
 def policy_search(request):
     """
     정책 검색 API
-    - 검색 = 필터의 한 형태
-    - 랜덤 없음
-    - 조건 기반 deterministic 결과
+    - 검색(q): search_summary 기반
+    - 필터: policy_type / category / region / age / employment / 신청 가능 여부
+    - deterministic
     """
     qs = Policy.objects.all()
 
-    # 1️⃣ 상태 필터 (기본값)
-    status = request.query_params.get("status")
-    if status:
-        qs = qs.filter(status=status)
+    # =========================
+    # 1. 상태 (기본 필터)
+    # =========================
+    status = request.query_params.get("status", "ACTIVE")
+    qs = qs.filter(status=status)
 
-    # 2️⃣ 검색어 (q)
+    # =========================
+    # 2. 검색어 (q)
+    # =========================
     q = request.query_params.get("q")
     if q:
-        qs = qs.filter(
-            Q(title__icontains=q) |
-            Q(summary__icontains=q) |
-            Q(provider__icontains=q)
-        )
+        qs = qs.filter(search_summary__icontains=q)
 
-    # 3️⃣ 출처 필터
-    source = request.query_params.get("source")
-    if source:
-        qs = qs.filter(source=source)
+    # =========================
+    # 3. 정책 유형 필터
+    # =========================
+    policy_type = request.query_params.get("policy_type")
+    if policy_type:
+        qs = qs.filter(policy_type=policy_type)
 
-    # 4️⃣ 지역 필터
+    # =========================
+    # 4. 카테고리 필터
+    # =========================
+    category = request.query_params.get("category")
+    if category:
+        qs = qs.filter(category=category)
+
+    # =========================
+    # 5. 지역 필터
+    # =========================
     region_sido = request.query_params.get("region_sido")
     if region_sido:
-        qs = qs.filter(region_sido=region_sido)
+        qs = qs.filter(
+            Q(region_scope="NATIONWIDE") |
+            Q(region_sido=region_sido) |
+            Q(applicable_regions__contains=[region_sido])
+        )
 
     region_sigungu = request.query_params.get("region_sigungu")
     if region_sigungu:
         qs = qs.filter(region_sigungu=region_sigungu)
 
-    # 5️⃣ 정렬
+    # =========================
+    # 6. 연령 필터
+    # =========================
+    age = request.query_params.get("age")
+    if age:
+        try:
+            age = int(age)
+            qs = qs.filter(
+                Q(min_age__isnull=True) | Q(min_age__lte=age),
+                Q(max_age__isnull=True) | Q(max_age__gte=age),
+            )
+        except ValueError:
+            pass
+
+    # =========================
+    # 7. 취업 상태 필터
+    # =========================
+    employment = request.query_params.get("employment")
+    if employment:
+        qs = qs.filter(employment__contains=[employment])
+
+    # =========================
+    # 8. 신청 가능 여부 필터
+    # =========================
+    is_open = request.query_params.get("is_open")
+    if is_open == "true":
+        today = date.today()
+        qs = qs.filter(
+            Q(start_date__isnull=True) | Q(start_date__lte=today),
+            Q(end_date__isnull=True) | Q(end_date__gte=today),
+        )
+
+    # =========================
+    # 9. 정렬
+    # =========================
     ordering = request.query_params.get("ordering", "deadline")
     if ordering == "latest":
         qs = qs.order_by("-start_date")
     elif ordering == "name":
         qs = qs.order_by("title")
     else:
-        # 기본: 마감 임박순 (null은 뒤로)
         qs = qs.order_by("end_date")
 
-    # 6️⃣ 페이징
+    # =========================
+    # 10. 페이징
+    # =========================
     paginator = PolicySearchPagination()
     page = paginator.paginate_queryset(qs, request)
 

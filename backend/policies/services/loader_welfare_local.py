@@ -135,7 +135,7 @@ def parse_welfare_local_policy(item):
         "detail_links": detail_links,
         "detail_contact": build_apply_links(item.get("문의처")),
 
-        "policy_type": item.get("서비스유형"),
+        "service_type": item.get("서비스유형"),
         "policy_detail": item.get("지원내용"),
 
         # =====================

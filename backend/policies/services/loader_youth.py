@@ -59,6 +59,23 @@ def map_region_codes(value):
     codes = split_codes(value)
     return map_codes_to_text(codes, REGION_CODE_MAP)
 
+# =========================
+# search_summary 생성 함수
+# =========================
+def build_search_summary(*values):
+    tokens = []
+    for value in values:
+        if isinstance(value, list):
+            tokens.extend(value)
+        elif isinstance(value, str):
+            tokens.append(value)
+
+    # 중복 제거 + 정제
+    tokens = list(dict.fromkeys([t.strip() for t in tokens if t and t.strip()]))
+
+    summary = " ".join(tokens)
+    return summary
+
 
 # =========================
 # Youth Policy Parser
@@ -106,6 +123,17 @@ def parse_youth_policy(item):
     )
     # benefit_type = benefit_types[0] if benefit_types else None
 
+    # -------------------------
+    # 검색용 summary 생성
+    # -------------------------
+    search_summary = build_search_summary(
+    item.get("정책명"),
+    split_codes(item.get("정책키워드명")),
+    employment,
+    special_target,
+    benefit_type,
+)
+    
     return {
         # =====================
         # 1. 식별 / 출처
@@ -119,7 +147,7 @@ def parse_youth_policy(item):
         # =====================
         "title": item.get("정책명"),
         "summary": item.get("정책설명내용"),
-        "search_summary": None,
+        "search_summary": search_summary,
         "keywords": split_codes(item.get("정책키워드명")),
 
         # =====================
@@ -151,7 +179,7 @@ def parse_youth_policy(item):
         # =====================
         "education": education,
         "major": major,
-        "special_target": [special_target],
+        "special_target": special_target,
         "target_detail": item.get("추가신청자격조건내용") +"/" + item.get("참여제외대상내용"),
 
         # =====================
@@ -162,7 +190,7 @@ def parse_youth_policy(item):
         "detail_links": item.get("참고URL주소1"),
         "detail_contact" : [],
             
-        "policy_type": benefit_type,
+        "service_type": benefit_type,
         "policy_detail": item.get("정책지원내용"),
 
         # =====================

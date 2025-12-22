@@ -23,7 +23,7 @@ class Policy(models.Model):
     # =========================
     title = models.CharField(max_length=300)
     summary = models.TextField(null=True, blank=True)
-    search_summary = models.CharField(max_length=200, null=True, blank=True)  # 카드/검색 전용
+    search_summary = models.TextField(null=True, blank=True)  # 검색 전용
     keywords = models.JSONField(default=list, blank=True)
 
     # =========================
@@ -72,7 +72,7 @@ class Policy(models.Model):
     detail_links = models.JSONField(default=list, blank=True)
     detail_contact = models.JSONField(default=list, blank=True)
 
-    policy_type = models.CharField(max_length=50, null=True, blank=True) # 현금 / 교육 / 서비스 등
+    service_type = models.CharField(max_length=50, null=True, blank=True) # 현금 / 교육 / 서비스 등
     policy_detail = models.TextField(null=True, blank=True)
 
     # =========================

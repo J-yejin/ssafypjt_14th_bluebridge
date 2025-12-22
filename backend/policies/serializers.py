@@ -66,7 +66,7 @@ class PolicySerializer(serializers.ModelSerializer):
             "detail_links",
             "detail_contact",
 
-            "policy_type",
+            "service_type",
             "policy_detail",
 
             # =========================
