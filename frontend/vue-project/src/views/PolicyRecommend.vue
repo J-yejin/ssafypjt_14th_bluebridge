@@ -49,7 +49,7 @@
     </div>
 
     <!-- 추천 화면 -->
-    <div v-else class="max-w-[1400px] mx-auto px-8 lg:px-12 py-12">
+    <div class="max-w-[1400px] mx-auto px-8 lg:px-12 py-12 relative">
       <div class="mb-12">
         <h1 class="text-blue-900 mb-3 text-4xl">정책 추천</h1>
         <p class="text-gray-600 text-lg">프로필을 기반으로 맞춤 정책을 추천해 드립니다.</p>
@@ -57,19 +57,19 @@
 
       <!-- RAG Search -->
       <div class="bg-white rounded-2xl shadow-xl p-10 mb-12 border border-blue-100">
-        <div class="flex items-start gap-4 mb-6">
+        <div class="flex items-start gap-4 mb-4">
           <div class="w-12 h-12 bg-gradient-to-br from-cyan-400 to-cyan-600 rounded-xl flex items-center justify-center flex-shrink-0 shadow-md">
             <Sparkles :size="24" class="text-white" />
           </div>
-          <div>
+          <div class="flex-1">
             <h2 class="text-blue-900 mb-2 text-2xl">AI 정책 검색</h2>
-            <p class="text-gray-600 text-lg">키워드나 조건을 입력하면 AI가 관련 정책을 찾아줍니다.</p>
+            <p class="text-gray-600 text-lg">구체적인 조건을 적을수록 더 정확히 찾아줘요.</p>
           </div>
         </div>
         <div class="flex gap-6">
           <input
             type="text"
-            placeholder="예) 청년 창업 지원, 주거 보증금 대출"
+            :placeholder="queryExamples[0] || '예) 서울 26세 미취업자 주거 지원 정책 추천'"
             v-model="ragQuery"
             @keypress.enter="handleRagSearch"
             class="flex-1 px-6 py-4 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent text-lg"
@@ -81,6 +81,48 @@
             <Sparkles :size="24" />
             <span>검색</span>
           </button>
+        </div>
+        <div v-if="queryExamples.length" class="mt-3 flex flex-wrap gap-2 text-sm text-gray-500">
+          <span class="text-gray-400">예시</span>
+          <button
+            v-for="ex in queryExamples"
+            :key="ex"
+            @click="ragQuery = ex; handleRagSearch()"
+            class="px-3 py-1 rounded-full bg-blue-50 text-blue-700 hover:bg-blue-100 transition"
+          >
+            {{ ex }}
+          </button>
+        </div>
+      </div>
+
+      <!-- Top3 Highlight (사용자 입력 후 노출) -->
+      <div v-if="showRagResults && top3Cards.length" class="mb-12">
+        <div class="flex items-center gap-3 mb-4">
+          <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 to-cyan-500 text-white flex items-center justify-center shadow-md">
+            <Sparkles :size="18" />
+          </div>
+          <div>
+            <h2 class="text-blue-900 text-2xl">추천 Top3</h2>
+            <p class="text-gray-600">적합도와 이유를 간단히 보여드려요.</p>
+          </div>
+        </div>
+        <div class="grid md:grid-cols-3 gap-6">
+          <div
+            v-for="card in top3Cards"
+            :key="card.id"
+            class="bg-white rounded-2xl shadow-lg border border-blue-100 p-6 flex flex-col gap-3 hover:-translate-y-1 transition-all"
+          >
+            <div class="flex items-center justify-between">
+              <span class="text-xs font-semibold px-3 py-1 rounded-full bg-blue-50 text-blue-700">추천</span>
+              <span class="text-sm font-semibold text-blue-600">적합도 {{ card.ux_score ?? '—' }}점</span>
+            </div>
+            <router-link :to="`/policy/${card.id}`" class="text-xl font-semibold text-blue-900 hover:text-blue-700">
+              {{ card.title }}
+            </router-link>
+            <p class="text-gray-600 text-sm leading-relaxed line-clamp-3">
+              {{ card.reason || '추천 이유를 불러오는 중입니다.' }}
+            </p>
+          </div>
         </div>
       </div>
 
@@ -126,7 +168,16 @@
 
       <!-- Profile-based Recommendations -->
       <div>
-        <h2 class="text-blue-900 mb-6 text-3xl">프로필 기반 추천</h2>
+        <div class="flex items-center gap-3 mb-3">
+          <h2 class="text-blue-900 text-3xl">프로필 기반 추천</h2>
+          <div
+            v-if="pageLoading"
+            class="flex items-center gap-2 text-sm text-blue-700 bg-blue-50 border border-blue-100 px-3 py-1.5 rounded-full"
+          >
+            <Sparkles :size="16" class="animate-pulse" />
+            <span>추천을 불러오는 중...</span>
+          </div>
+        </div>
         <div v-if="profileBasedRecommendations.length > 0" class="grid lg:grid-cols-2 gap-8">
           <router-link
             v-for="policy in profileBasedRecommendations"
@@ -175,6 +226,7 @@ import { Sparkles, AlertCircle, Search, ArrowRight } from 'lucide-vue-next';
 import { useUserStore } from '../stores/userStore';
 import { usePolicyStore } from '../stores/policyStore';
 import { useAuthStore } from '../stores/authStore';
+import { request } from '../api/requestHelper'; // lightweight helper for direct API calls
 
 const router = useRouter();
 const authStore = useAuthStore();
@@ -187,14 +239,24 @@ const ragQuery = ref('');
 const showRagResults = ref(false);
 const ragBasedRecommendations = ref([]);
 const recommendedFromApi = ref([]);
+const top3Cards = ref([]);
+const queryExamples = ref([]);
+const pageLoading = ref(false);
 
 const loadRecommendations = async () => {
+  pageLoading.value = true;
   if (!userStore.isProfileComplete) {
     recommendedFromApi.value = [];
+    top3Cards.value = [];
+    pageLoading.value = false;
     return;
   }
-  const results = await policyStore.recommendPolicies(userStore.profile);
-  recommendedFromApi.value = results || [];
+  // 기본 추천: backend /recommend/ (GET)
+  const data = await request('/recommend/');
+  recommendedFromApi.value = data?.results || [];
+  // 기본 로드는 리스트만, Top3는 사용자 질의 이후 노출
+  queryExamples.value = (data?.query_examples || []).slice(0, 2);
+  pageLoading.value = false;
 };
 
 onMounted(async () => {
@@ -213,31 +275,7 @@ watch(
 );
 
 const profileBasedRecommendations = computed(() => {
-  if (recommendedFromApi.value.length) return recommendedFromApi.value;
-  const list = policyStore.policies || [];
-  const interests = (userStore.profile.interests || []).map((i) => i.toLowerCase());
-  const region = userStore.profile.region || '';
-  const userAge = Number(userStore.profile.age);
-
-  return list.filter((policy) => {
-    const [minAge, maxAge] = (policy.ageRange || '').split('-').map(Number);
-    const ageMatch = Number.isNaN(userAge)
-      ? true
-      : (Number.isNaN(minAge) || userAge >= minAge) && (Number.isNaN(maxAge) || userAge <= maxAge);
-
-    const regionMatch = region
-      ? !policy.region ||
-        policy.region === '전국' ||
-        policy.region.includes(region) ||
-        region.includes(policy.region)
-      : true;
-
-    const interestMatch = interests.length
-      ? policy.tags.some((tag) => interests.includes(String(tag).toLowerCase()))
-      : true;
-
-    return ageMatch && regionMatch && interestMatch;
-  });
+  return recommendedFromApi.value || [];
 });
 
 const handleRagSearch = () => {
@@ -247,10 +285,27 @@ const handleRagSearch = () => {
     showRagResults.value = false;
     return;
   }
-  ragBasedRecommendations.value = policyStore.searchPolicies(query);
-  showRagResults.value = true;
+  (async () => {
+    pageLoading.value = true;
+    const data = await request('/recommend/detail/', {
+      method: 'POST',
+      body: JSON.stringify({ query }),
+    });
+    ragBasedRecommendations.value = data?.results || [];
+    showRagResults.value = true;
+    // RAG top3가 있으면 하이라이트 교체
+    top3Cards.value = data?.top3?.length ? data.top3 : top3Cards.value;
+    queryExamples.value = (data?.query_examples || []).slice(0, 2) || queryExamples.value;
+    pageLoading.value = false;
+  })();
 };
 
 const goLogin = () => router.push('/login');
 const goOnboarding = () => router.push('/onboarding');
 </script>
+
+<style scoped>
+.loading-overlay {
+  @apply fixed inset-0 bg-white/70 backdrop-blur-sm flex items-center justify-center z-50;
+}
+</style>

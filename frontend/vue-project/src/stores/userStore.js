@@ -86,6 +86,7 @@ export const useUserStore = defineStore('user', () => {
         gender: profile.value.gender || '',
         household_income: profile.value.householdIncome || null,
         family_size: profile.value.familySize || null,
+        income_quintile: profile.value.incomeQuintile || '',
         employment_status: profile.value.employmentStatus || '',
         education_level: profile.value.educationLevel || '',
         major: profile.value.major || '',
