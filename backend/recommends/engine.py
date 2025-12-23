@@ -97,14 +97,15 @@ def build_where_filter(profile: Optional[Profile]) -> Dict:
         return {}
 
     where: Dict = {}
-    if profile.region:
-        where = {
-            "$or": [
-                {"region_scope": "NATIONWIDE"},
-                {"region_sido": profile.region},
-            ]
-        }
 
+    # region이 None이 아닐 때만 추가
+    if profile.region:
+        where["$or"] = [
+            {"region_scope": "NATIONWIDE"},
+            {"region_sido": profile.region},  # 정확한 지역 값만 필터링
+        ]
+
+    # age가 None이 아닐 때만 필터 추가
     if profile.age is not None:
         age_clause = {
             "$and": [
@@ -117,6 +118,7 @@ def build_where_filter(profile: Optional[Profile]) -> Dict:
         else:
             where = age_clause
 
+    # employment_status가 None이 아닐 때만 추가
     if profile.employment_status:
         employment_clause = {"employment": {"$contains": profile.employment_status}}
         if where:
@@ -124,6 +126,7 @@ def build_where_filter(profile: Optional[Profile]) -> Dict:
         else:
             where = employment_clause
 
+    # major가 None이 아닐 때만 추가
     if profile.major:
         major_clause = {"major": {"$contains": profile.major}}
         if where:
@@ -131,36 +134,59 @@ def build_where_filter(profile: Optional[Profile]) -> Dict:
         else:
             where = major_clause
 
+    # 최종적으로 None 값을 포함한 필터를 제거합니다.
+    # 값이 None이 포함되지 않도록 클린징 작업을 수행
+    where = {key: value for key, value in where.items() if value is not None}
+
+    # for debugging: print the final where filter to see if it contains None
+    print(f"Final where filter: {where}")
+
     return where
+
 
 
 def search_with_chroma(
     query_text: str,
     profile: Optional[Profile],
-    top_k: int = 10,
+    top_k: int = 50,
 ):
     """
-    질의 전처리/확장 → 임베딩 → Chroma 검색 → policy_id·거리 반환.
+    질의 전처리/확장 → 임베딩 → Chroma 의미 검색 → policy_id·거리 반환
     """
+    # 1. 쿼리 전처리
     normalized = normalize_query(query_text)
     expanded_list = expand_query(normalized)
     combined_query = " ".join(expanded_list) if expanded_list else normalized
 
-    collection = get_chroma_collection()
+    # 2. 임베딩
     [query_embedding] = embed_texts([combined_query])
-    where_filter = build_where_filter(profile)
 
+    # 3. Chroma where (❗ 안전 필터만)
+# 3. Chroma where (❗ 안전 필터만)
+    where_filter = build_where_filter(profile)
+    print(f"Where Filter: {where_filter}")  # 로그 추가
+    if not where_filter:
+        where_filter = None
+
+
+    # 4. Chroma 검색 (⚠ top_k 사용)
     result = vector_db.query(
         query_embeddings=[query_embedding],
-        where=where_filter if where_filter else None,
+        where=where_filter,  # 여기서 where_filter를 사용하여 프로필 기반 필터를 적용
         top_k=top_k,
         name=COLLECTION_NAME,
     )
+
+    # 5. 결과 파싱
     ids = result.get("ids", [[]])[0] if result else []
     scores = result.get("distances", [[]])[0] if result else []
 
-    policy_ids = [int(x) for x in ids]
+    # 유효한 policy_id만 필터링
+    policy_ids = [int(pid) for pid in ids if pid is not None]
+
     return policy_ids, scores
+
+
 
 
 def fetch_policies_by_ids(policy_ids: List[int]) -> List[Policy]:
