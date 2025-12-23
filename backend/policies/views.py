@@ -11,7 +11,7 @@ from django.shortcuts import get_object_or_404
 from datetime import date
 
 from .models import Policy, Wishlist
-from .serializers import PolicySerializer, WishlistCreateSerializer, WishlistItemSerializer
+from .serializers import PolicySerializer, PolicyListSerializer, WishlistCreateSerializer, WishlistItemSerializer
 
 # 정책 리스트 조회 : 초기 화면 - 랜덤으로 20개 보여줌
 @api_view(["GET"])
@@ -154,7 +154,7 @@ def policy_search(request):
     paginator = PolicySearchPagination()
     page = paginator.paginate_queryset(qs, request)
 
-    serializer = PolicySerializer(page, many=True)
+    serializer = PolicyListSerializer(page, many=True)
     return paginator.get_paginated_response(serializer.data)
 
 
