@@ -1,4 +1,4 @@
-﻿<template>
+<template>
   <div class="min-h-screen">
     <!-- 로그인 안내 -->
     <div v-if="!isLoggedIn" class="min-h-screen flex items-center justify-center">
@@ -52,7 +52,7 @@
     <div v-else class="max-w-[1400px] mx-auto px-8 lg:px-12 py-12">
       <div class="mb-12">
         <h1 class="text-blue-900 mb-3 text-4xl">정책 추천</h1>
-        <p class="text-gray-600 text-lg">프로필을 기반으로 맞춤 정책을 추천해 드립니다.</p>
+        <p class="text-gray-600 text-lg">프로필과 AI 검색으로 맞춤 정책을 찾아드립니다.</p>
       </div>
 
       <!-- RAG Search -->
@@ -63,7 +63,7 @@
           </div>
           <div>
             <h2 class="text-blue-900 mb-2 text-2xl">AI 정책 검색</h2>
-            <p class="text-gray-600 text-lg">키워드나 조건을 입력하면 AI가 관련 정책을 찾아줍니다.</p>
+            <p class="text-gray-600 text-lg">키워드나 조건을 입력하면 AI가 관련 정책과 추천 이유를 제시합니다.</p>
           </div>
         </div>
         <div class="flex gap-6">
@@ -84,41 +84,62 @@
         </div>
       </div>
 
+      <!-- Top3 이유 카드 -->
+      <div v-if="top3.length" class="mb-10">
+        <h2 class="text-blue-900 mb-4 text-3xl">AI 추천 Top 3</h2>
+        <div class="grid lg:grid-cols-3 gap-6">
+          <router-link
+            v-for="item in top3"
+            :key="item.id"
+            :to="`/policy/${item.id}`"
+            class="bg-gradient-to-br from-cyan-50 to-blue-50 rounded-2xl shadow-lg hover:shadow-2xl transition-all p-6 border-2 border-cyan-200 hover:border-cyan-300 group"
+          >
+            <div class="flex items-center gap-3 mb-3">
+              <Sparkles :size="20" class="text-cyan-600" />
+              <span class="text-cyan-700 font-semibold">추천</span>
+            </div>
+            <h3 class="text-blue-900 text-xl mb-2 group-hover:text-blue-700 transition-colors">
+              {{ findPolicyTitle(item.id) }}
+            </h3>
+            <p class="text-gray-600 text-sm leading-relaxed line-clamp-3">{{ item.reason }}</p>
+          </router-link>
+        </div>
+      </div>
+
       <!-- RAG Results -->
-      <div v-if="showRagResults && ragBasedRecommendations.length > 0" class="mb-12">
-        <h2 class="text-blue-900 mb-6 text-3xl">AI 추천 결과</h2>
+      <div v-if="ragBasedRecommendations.length" class="mb-12">
+        <div class="flex items-center justify-between mb-4">
+          <h2 class="text-blue-900 text-2xl">AI 추천 결과</h2>
+          <span class="text-gray-500 text-sm">총 {{ ragBasedRecommendations.length }}건</span>
+        </div>
         <div class="grid lg:grid-cols-2 gap-8">
           <router-link
             v-for="policy in ragBasedRecommendations"
             :key="policy.id"
             :to="`/policy/${policy.id}`"
-            class="bg-gradient-to-br from-cyan-50 to-blue-50 rounded-2xl shadow-lg hover:shadow-2xl transition-all p-8 border-2 border-cyan-200 hover:border-cyan-300 group relative overflow-hidden"
+            class="bg-white rounded-2xl shadow-md hover:shadow-xl transition-all p-8 border-2 border-transparent hover:border-cyan-200 group"
           >
-            <div class="absolute top-0 right-0 w-32 h-32 bg-cyan-200/30 rounded-full -mr-16 -mt-16" />
-            <div class="relative">
-              <div class="flex items-center gap-3 mb-4">
-                <Sparkles :size="20" class="text-cyan-600" />
-                <span class="text-cyan-700">AI 추천</span>
-              </div>
-              <div class="flex items-start justify-between mb-4">
-                <div class="flex items-center gap-3">
-                  <span class="px-4 py-1.5 bg-cyan-100 text-cyan-700 rounded-full">
-                    {{ policy.category }}
-                  </span>
-                  <span class="text-gray-500">{{ policy.organization }}</span>
-                </div>
-              </div>
-              <h3 class="text-blue-900 mb-3 text-2xl group-hover:text-blue-700 transition-colors">{{ policy.title }}</h3>
-    
-              <div class="flex flex-wrap gap-2">
-                <span
-                  v-for="tag in policy.tags"
-                  :key="tag"
-                  class="px-3 py-1 bg-white/60 text-gray-600 rounded-lg text-sm"
-                >
-                  #{{ tag }}
+            <div class="flex items-start justify-between mb-3">
+              <div class="flex items-center gap-3">
+                <span class="px-4 py-1.5 bg-cyan-100 text-cyan-700 rounded-full">
+                  {{ policy.category }}
                 </span>
+                <span class="text-gray-500">{{ policy.organization }}</span>
               </div>
+              <span v-if="policy.uxScore !== null" class="text-cyan-700 bg-cyan-50 px-3 py-1 rounded-full text-sm">
+                적합도 {{ policy.uxScore }}%
+              </span>
+            </div>
+            <h3 class="text-blue-900 mb-2 text-xl group-hover:text-blue-700 transition-colors">{{ policy.title }}</h3>
+            <p class="text-gray-600 mb-4 line-clamp-2 leading-relaxed">{{ policy.description }}</p>
+            <div class="flex flex-wrap gap-2">
+              <span
+                v-for="tag in policy.tags"
+                :key="tag"
+                class="px-3 py-1 bg-gray-100 text-gray-600 rounded-lg text-sm"
+              >
+                #{{ tag }}
+              </span>
             </div>
           </router-link>
         </div>
@@ -144,7 +165,7 @@
               <span class="text-gray-500 bg-gray-50 px-3 py-1 rounded-full text-sm">{{ policy.region }}</span>
             </div>
             <h3 class="text-blue-900 mb-3 text-2xl group-hover:text-blue-700 transition-colors">{{ policy.title }}</h3>
-  
+            <p class="text-gray-600 mb-5 line-clamp-2 leading-relaxed">{{ policy.description }}</p>
             <div class="flex flex-wrap gap-2">
               <span
                 v-for="tag in policy.tags"
@@ -184,8 +205,8 @@ const policyStore = usePolicyStore();
 const isLoggedIn = computed(() => authStore.isAuthenticated);
 
 const ragQuery = ref('');
-const showRagResults = ref(false);
 const ragBasedRecommendations = ref([]);
+const top3 = ref([]);
 const recommendedFromApi = ref([]);
 
 const loadRecommendations = async () => {
@@ -193,8 +214,14 @@ const loadRecommendations = async () => {
     recommendedFromApi.value = [];
     return;
   }
-  const results = await policyStore.recommendPolicies(userStore.profile);
+  const results = await policyStore.recommendPolicies();
   recommendedFromApi.value = results || [];
+};
+
+const findPolicyTitle = (id) => {
+  const found = ragBasedRecommendations.value.find((p) => String(p.id) === String(id));
+  const base = recommendedFromApi.value.find((p) => String(p.id) === String(id));
+  return found?.title || base?.title || `정책 #${id}`;
 };
 
 onMounted(async () => {
@@ -240,15 +267,16 @@ const profileBasedRecommendations = computed(() => {
   });
 });
 
-const handleRagSearch = () => {
+const handleRagSearch = async () => {
   const query = ragQuery.value.trim();
   if (!query) {
     ragBasedRecommendations.value = [];
-    showRagResults.value = false;
+    top3.value = [];
     return;
   }
-  ragBasedRecommendations.value = policyStore.searchPolicies(query);
-  showRagResults.value = true;
+  const { results, top3: t3 } = await policyStore.recommendPoliciesRag(query);
+  ragBasedRecommendations.value = results || [];
+  top3.value = t3 || [];
 };
 
 const goLogin = () => router.push('/login');
