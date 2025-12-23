@@ -17,6 +17,19 @@ def parse_date(value):
     return None
 
 
+def parse_period_range(value):
+    """
+    "20240506 ~ 20240512" 같은 신청기간 문자열을
+    (start_date, end_date) 튜플로 변환. 날짜 파싱에 실패하면 None 반환.
+    """
+    if not value or not isinstance(value, str):
+        return None, None
+    if "~" not in value:
+        return None, None
+    start_raw, end_raw = [part.strip() for part in value.split("~", 1)]
+    return parse_date(start_raw), parse_date(end_raw)
+
+
 def split_codes(value):
     """
     "001,002,003" → ["001", "002", "003"]
@@ -196,8 +209,14 @@ def parse_youth_policy(item):
         # =====================
         # 9. 신청 가능 여부
         # =====================
-        "start_date": parse_date(item.get("사업시작일")),
-        "end_date": parse_date(item.get("사업종료일")),
+        "start_date": (
+            parse_date(item.get("사업기간시작일자"))
+            or parse_period_range(item.get("신청기간"))[0]
+        ),
+        "end_date": (
+            parse_date(item.get("사업기간종료일자"))
+            or parse_period_range(item.get("신청기간"))[1]
+        ),
 
         # =====================
         # 10. 상태 / 원본

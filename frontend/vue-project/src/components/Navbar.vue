@@ -66,9 +66,7 @@
               to="/profile"
               :class="[
                 'flex items-center gap-2 px-5 py-2.5 rounded-lg transition-all',
-                isActive('/profile')
-                  ? 'bg-gradient-to-r from-blue-500 to-cyan-500 text-white shadow-md'
-                  : 'bg-gray-50 text-gray-700 hover:bg-gray-100'
+                isActive('/profile') ? 'accent-button text-white shadow-md' : 'bg-gray-50 text-gray-700 hover:bg-gray-100'
               ]"
             >
               <User :size="16" />
@@ -90,7 +88,7 @@
             </router-link>
             <router-link
               to="/signup"
-              class="px-4 py-2.5 rounded-lg text-white bg-gradient-to-r from-blue-500 to-cyan-500 shadow-md hover:shadow-lg transition-all"
+              class="px-4 py-2.5 rounded-lg text-white accent-button shadow-md hover:shadow-lg transition-all"
             >
               회원가입
             </router-link>
@@ -114,7 +112,7 @@ const isActive = (path) => computed(() => route.path === path).value;
 const authStore = useAuthStore();
 const userStore = useUserStore();
 const isLoggedIn = computed(() => authStore.isAuthenticated);
-const profileLabel = computed(() => (userStore.isProfileComplete ? '마이 프로필' : '프로필'));
+const profileLabel = computed(() => (userStore.isProfileComplete ? '마이 페이지' : '프로필'));
 
 const handleLogout = () => {
   authStore.clearTokens();

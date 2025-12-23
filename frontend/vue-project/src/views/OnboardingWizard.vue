@@ -58,7 +58,7 @@
               v-if="currentStep.allowNone"
               type="button"
               @click="clearMulti(currentStep.key)"
-              :class="['option-button', formData[currentStep.key].length === 0 ? 'option-button--active' : '']"
+              :class="['option-button', isNoneSelected(currentStep.key) ? 'option-button--active' : '']"
             >
               해당 없음
             </button>
@@ -112,6 +112,7 @@ import { useAuthStore } from '../stores/authStore';
 const userStore = useUserStore();
 const authStore = useAuthStore();
 const router = useRouter();
+const noneSpecialTarget = 'none';
 
 const interestOptions = ['취업', '주거', '교육', '문화', '건강', '지역', '창업'];
 const regionOptions = ['서울', '경기', '인천', '부산', '대구', '광주', '대전', '울산', '세종', '강원', '충북', '충남', '전북', '전남', '경북', '경남', '제주', '기타'];
@@ -242,14 +243,23 @@ const toggleMulti = (key, option) => {
   if (idx > -1) {
     list.splice(idx, 1);
   } else {
-    list.push(option);
+    const filtered = list.filter((item) => item !== noneSpecialTarget);
+    filtered.push(option);
+    formData.value[key] = [...filtered];
+    return;
   }
   formData.value[key] = [...list];
 };
 
 const clearMulti = (key) => {
-  formData.value[key] = [];
+  if (Array.isArray(formData.value[key]) && formData.value[key].includes(noneSpecialTarget)) {
+    formData.value[key] = [];
+    return;
+  }
+  formData.value[key] = [noneSpecialTarget];
 };
+
+const isNoneSelected = (key) => Array.isArray(formData.value[key]) && formData.value[key].includes(noneSpecialTarget);
 
 const saveAndFinish = async () => {
   const incomeInWon = formData.value.householdIncome
@@ -301,15 +311,15 @@ onMounted(async () => {
 }
 
 .option-button--active {
-  border-color: #3b82f6;
-  background: linear-gradient(135deg, #e0efff 0%, #f4f8ff 100%);
-  color: #1d4ed8;
-  box-shadow: 0 8px 20px rgba(59, 130, 246, 0.15);
+  border-color: #59a760;
+  background: linear-gradient(135deg, #e6f7e5 0%, #d7f2d6 100%);
+  color: #2f7c46;
+  box-shadow: 0 8px 20px rgba(89, 167, 96, 0.18);
 }
 
 .option-button:hover {
-  border-color: #bfdbfe;
-  background: #f8fbff;
+  border-color: #cde9d2;
+  background: #f5fbf5;
 }
 
 .option-button + .option-button {
@@ -327,8 +337,8 @@ onMounted(async () => {
 
 .input-field:focus {
   outline: none;
-  border-color: #3b82f6;
-  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
+  border-color: #59a760;
+  box-shadow: 0 0 0 3px rgba(89, 167, 96, 0.2);
 }
 
 .nav-button {
@@ -345,9 +355,9 @@ onMounted(async () => {
 }
 
 .nav-button--primary {
-  background: linear-gradient(135deg, #0ea5e9 0%, #3b82f6 100%);
-  color: #fff;
-  box-shadow: 0 10px 25px rgba(14, 165, 233, 0.25);
+  background: linear-gradient(135deg, #9fdcff 0%, #5cbcff 100%);
+  color: #0b2f4a;
+  box-shadow: 0 10px 25px rgba(92, 188, 255, 0.25);
 }
 
 .nav-button:disabled {
