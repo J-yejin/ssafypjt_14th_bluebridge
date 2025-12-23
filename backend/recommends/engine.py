@@ -151,37 +151,23 @@ def search_with_chroma(
     top_k: int = 50,
 ):
     """
-    질의 전처리/확장 → 임베딩 → Chroma 의미 검색 → policy_id·거리 반환
+    ?? ??? ???? Chroma?? ?? ??? ???? ???? ???? ???.
     """
-    # 1. 쿼리 전처리
     normalized = normalize_query(query_text)
     expanded_list = expand_query(normalized)
     combined_query = " ".join(expanded_list) if expanded_list else normalized
 
-    # 2. 임베딩
     [query_embedding] = embed_texts([combined_query])
 
-    # 3. Chroma where (❗ 안전 필터만)
-# 3. Chroma where (❗ 안전 필터만)
-    where_filter = build_where_filter(profile)
-    print(f"Where Filter: {where_filter}")  # 로그 추가
-    if not where_filter:
-        where_filter = None
-
-
-    # 4. Chroma 검색 (⚠ top_k 사용)
     result = vector_db.query(
         query_embeddings=[query_embedding],
-        where=where_filter,  # 여기서 where_filter를 사용하여 프로필 기반 필터를 적용
+        where=None,
         top_k=top_k,
         name=COLLECTION_NAME,
     )
 
-    # 5. 결과 파싱
     ids = result.get("ids", [[]])[0] if result else []
     scores = result.get("distances", [[]])[0] if result else []
-
-    # 유효한 policy_id만 필터링
     policy_ids = [int(pid) for pid in ids if pid is not None]
 
     return policy_ids, scores

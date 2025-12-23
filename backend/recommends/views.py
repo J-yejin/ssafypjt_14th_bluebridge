@@ -74,25 +74,31 @@ def recommend_list(request):
 def recommend_detail(request):
     """
     POST /bluebridge/recommend/detail
-    쿼리 임베딩 + 프로필 필터 기반 벡터 검색 상위 10개 반환.
-    body: { "query": "텍스트" }
+    ?? + ???? ?? ?? 10? ???? ??.
+    body: { "query": "..." }
     """
     query = request.data.get("query")
     if not query:
-        return Response({"detail": "query 필드가 필요합니다."}, status=400)
+        return Response({"detail": "query ?? ?????"}, status=400)
 
     profile, _ = Profile.objects.get_or_create(user=request.user)
-    policy_ids, scores = search_with_chroma(query_text=query, profile=profile, top_k=10)
-    policies = fetch_policies_by_ids(policy_ids)
-    reranked = rerank_with_profile(policies, scores, profile)
-    reranked = assign_ux_scores(reranked)
+    policy_ids, scores = search_with_chroma(query_text=query, profile=profile, top_k=20)
+
+    qs = Policy.objects.filter(id__in=policy_ids)
+    qs = _filter_policies_by_profile(qs, profile)
+    policy_map = {p.id: p for p in qs}
     dist_map = {pid: dist for pid, dist in zip(policy_ids, scores)}
+
+    policies = [policy_map[i] for i in policy_ids if i in policy_map]
+    filtered_scores = [dist_map.get(p.id, 0.0) for p in policies]
+
+    reranked = rerank_with_profile(policies, filtered_scores, profile)
+    reranked = assign_ux_scores(reranked)
     serializer = PolicyBasicSerializer(reranked, many=True)
     ordered_distances = [dist_map.get(p.id) for p in reranked]
 
     top3 = select_top3_with_reasons(reranked[:10], profile, query)
 
-    # 추천 로그 저장 (에러는 사용자 응답에 영향 주지 않음)
     try:
         RecommendationLog.objects.create(
             user=request.user,
