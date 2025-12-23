@@ -22,19 +22,19 @@ export const useUserStore = defineStore('user', () => {
   const loading = ref(false);
   const error = ref(null);
 
-  // 필수 항목 + 온보딩 항목 최소 1개 입력 확인
+  // 필수 항목 입력 확인
   const isProfileComplete = computed(() => {
     const current = profile.value;
-    const baseFilled = current.age && current.region && current.interests.length > 0;
-    const onboardingFilled =
-      current.gender ||
-      current.employmentStatus ||
-      current.educationLevel ||
-      current.major ||
-      (current.specialTargets || []).length > 0 ||
-      current.householdIncome ||
-      current.familySize;
-    return baseFilled && onboardingFilled;
+    return Boolean(
+      current.age &&
+        current.region &&
+        current.interests.length > 0 &&
+        current.gender &&
+        current.employmentStatus &&
+        current.educationLevel &&
+        current.major &&
+        (current.specialTargets || []).length > 0
+    );
   });
 
   const updateProfile = (newProfile) => {

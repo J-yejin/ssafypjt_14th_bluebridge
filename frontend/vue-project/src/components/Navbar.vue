@@ -112,7 +112,7 @@ const isActive = (path) => computed(() => route.path === path).value;
 const authStore = useAuthStore();
 const userStore = useUserStore();
 const isLoggedIn = computed(() => authStore.isAuthenticated);
-const profileLabel = computed(() => (userStore.isProfileComplete ? '마이 프로필' : '프로필'));
+const profileLabel = computed(() => (userStore.isProfileComplete ? '마이 페이지' : '프로필'));
 
 const handleLogout = () => {
   authStore.clearTokens();

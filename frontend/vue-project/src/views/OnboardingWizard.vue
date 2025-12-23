@@ -58,7 +58,7 @@
               v-if="currentStep.allowNone"
               type="button"
               @click="clearMulti(currentStep.key)"
-              :class="['option-button', formData[currentStep.key].length === 0 ? 'option-button--active' : '']"
+              :class="['option-button', isNoneSelected(currentStep.key) ? 'option-button--active' : '']"
             >
               해당 없음
             </button>
@@ -112,6 +112,7 @@ import { useAuthStore } from '../stores/authStore';
 const userStore = useUserStore();
 const authStore = useAuthStore();
 const router = useRouter();
+const noneSpecialTarget = 'none';
 
 const interestOptions = ['취업', '주거', '교육', '문화', '건강', '지역', '창업'];
 const regionOptions = ['서울', '경기', '인천', '부산', '대구', '광주', '대전', '울산', '세종', '강원', '충북', '충남', '전북', '전남', '경북', '경남', '제주', '기타'];
@@ -242,14 +243,23 @@ const toggleMulti = (key, option) => {
   if (idx > -1) {
     list.splice(idx, 1);
   } else {
-    list.push(option);
+    const filtered = list.filter((item) => item !== noneSpecialTarget);
+    filtered.push(option);
+    formData.value[key] = [...filtered];
+    return;
   }
   formData.value[key] = [...list];
 };
 
 const clearMulti = (key) => {
-  formData.value[key] = [];
+  if (Array.isArray(formData.value[key]) && formData.value[key].includes(noneSpecialTarget)) {
+    formData.value[key] = [];
+    return;
+  }
+  formData.value[key] = [noneSpecialTarget];
 };
+
+const isNoneSelected = (key) => Array.isArray(formData.value[key]) && formData.value[key].includes(noneSpecialTarget);
 
 const saveAndFinish = async () => {
   const incomeInWon = formData.value.householdIncome
