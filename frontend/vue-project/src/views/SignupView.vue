@@ -182,8 +182,8 @@ select {
 }
 input:focus,
 select:focus {
-  border-color: #2563eb;
-  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
+  border-color: #59a760;
+  box-shadow: 0 0 0 3px rgba(89, 167, 96, 0.18);
 }
 .btn {
   border: none;
@@ -194,9 +194,9 @@ select:focus {
   transition: transform 0.12s ease, box-shadow 0.12s ease, background 0.12s ease;
 }
 .btn.primary {
-  background: #0f60ff;
+  background: linear-gradient(135deg, #24b47e 0%, #3b82f6 100%);
   color: #fff;
-  box-shadow: 0 10px 25px rgba(15, 96, 255, 0.35);
+  box-shadow: 0 10px 25px rgba(36, 180, 126, 0.32);
 }
 .btn:disabled {
   opacity: 0.6;
@@ -225,7 +225,7 @@ select:focus {
   align-items: center;
   justify-content: center;
   border: 1px solid #d0d7e2;
-  background: #f8fafc;
+  background: #f3fbf5;
   padding: 10px 14px;
   border-radius: 9999px;
   cursor: pointer;
@@ -234,10 +234,10 @@ select:focus {
   min-width: 64px;
 }
 .chip--active {
-  background: #0f60ff;
+  background: #72c072;
   color: #fff;
-  border-color: #0f60ff;
-  box-shadow: 0 10px 25px rgba(15, 96, 255, 0.25);
+  border-color: #72c072;
+  box-shadow: 0 10px 25px rgba(114, 192, 114, 0.25);
 }
 .helper {
   color: #dc2626;
@@ -248,7 +248,7 @@ select:focus {
   color: #475569;
 }
 .hint a {
-  color: #2563eb;
+  color: #3f8c4f;
   text-decoration: none;
 }
 </style>

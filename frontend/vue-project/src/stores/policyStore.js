@@ -4,47 +4,169 @@ import { fetchPolicies, fetchPolicyById, fetchRecommendations } from '../api/cli
 import { mockPolicies } from '../data/mockPolicies';
 
 const toPeriod = (start, end) => {
-  if (!start && !end) return '';
+  if (!start && !end) return '제한없음';
   if (start && end) return `${start} ~ ${end}`;
-  return start || end || '';
+  return start || end || '제한없음';
 };
 
 const toAgeRange = (minAge, maxAge) => {
+  if (minAge === '제한없음' || maxAge === '제한없음') return '제한없음';
   if (!minAge && !maxAge) return '제한없음';
   if (minAge && maxAge) return `${minAge}-${maxAge}`;
-  return minAge ? `${minAge}+` : `${maxAge}-`;
+  if (minAge) return `${minAge}+`;
+  return `${maxAge}-`;
+};
+
+const formatMultiline = (text = '') => {
+  const raw = (text || '').toString();
+  if (!raw) return '';
+  return raw
+    .replace(/\r\n|\r/g, '\n')
+    .replace(/\\n/g, '\n')
+    .replace(/n\//g, '\n') // handle n/ markers as new lines
+    .replace(/[■□▪▫▣◾◽◼◻※]/g, '\n$& ') // keep bullet/box symbols but move to a new line
+    .replace(/\s*-\s*/g, '\n- ') // break dash-separated bullets into new lines
+    .replace(/\n{2,}/g, '\n') // collapse multiple blank lines
+    .trim();
+};
+
+const cleanList = (items = []) => {
+  const seen = new Set();
+  const result = [];
+  items.forEach((item) => {
+    const raw = (item || '').toString().trim();
+    if (!raw) return;
+    // 선행/후행 대시·슬래시 제거 (예: "-/도내 청년 누구나" -> "도내 청년 누구나")
+    const stripped = raw.replace(/^[-/]+/, '').replace(/[-/]+$/, '').trim();
+    if (!stripped) return;
+    if (seen.has(stripped)) return;
+    seen.add(stripped);
+    result.push(stripped);
+  });
+  return result;
 };
 
 const transformPolicy = (p) => {
   if (!p) return null;
 
-  const eligibility = [
-    ...(p.employment_requirements || []),
-    ...(p.education_requirements || []),
-    ...(p.major_requirements || []),
-    ...(p.income_requirements || []),
-    ...(p.special_target || []),
-  ].filter(Boolean);
+  const mapRegionsToBuckets = (applicableRegions = [], fallback = '') => {
+    const topLevel = [
+      '서울특별시',
+      '부산광역시',
+      '대구광역시',
+      '인천광역시',
+      '광주광역시',
+      '대전광역시',
+      '울산광역시',
+      '세종특별자치시',
+      '경기도',
+      '강원특별자치도',
+      '충청북도',
+      '충청남도',
+      '전라북도',
+      '전라남도',
+      '경상북도',
+      '경상남도',
+      '제주특별자치도',
+    ];
+
+    const mapName = (name = '') => {
+      const r = String(name || '').trim();
+      if (!r) return '';
+      if (r.includes('전국')) return '전국';
+      const found = topLevel.find((t) => r.includes(t));
+      return found || r;
+    };
+
+    const regions = Array.isArray(applicableRegions) ? applicableRegions : [];
+    const cleaned = [];
+    const seen = new Set();
+    regions.map(mapName).filter(Boolean).forEach((r) => {
+      if (seen.has(r)) return;
+      seen.add(r);
+      cleaned.push(r);
+    });
+    if (cleaned.length) return cleaned;
+
+    const fb = mapName(fallback);
+    return fb ? [fb] : ['전국'];
+  };
+
+  const mapToBucket = (value = '') => {
+    const v = value.trim();
+    const bucketMap = {
+      일자리: '일자리',
+      취업: '일자리',
+      창업: '일자리',
+      교육: '교육',
+      '문화·여가': '복지문화',
+      복지문화: '복지문화',
+      신체건강: '건강',
+      정신건강: '건강',
+      생활지원: '생활지원',
+      보육: '생활지원',
+      '보호·돌봄': '생활지원',
+      서민금융: '재무/법률',
+      법률: '재무/법률',
+      '안전·위기': '위기·안전',
+      '임신·출산': '가족/권리',
+      '입양·위탁': '가족/권리',
+      참여권리: '가족/권리',
+      주거: '생활지원',
+    };
+    return bucketMap[v] || '';
+  };
+
+  const rawCategory = p.category || '';
+  const rawCategoryParts = rawCategory
+    .split(',')
+    .map((v) => v.trim())
+    .filter(Boolean);
+  const mappedCategories = cleanList(rawCategoryParts.map(mapToBucket).filter(Boolean));
+
+  let category = mappedCategories[0];
+  if (!category) {
+    category = p.source === 'youth' ? '기타' : '기타';
+  }
+
+  const region = p.region_sigungu || p.region_sido || '';
+  const regionBuckets = mapRegionsToBuckets(p.applicable_regions, region);
+
+  const eligibilitySections = [
+    { label: '취업·직업', values: p.employment_requirements || p.employment || [] },
+    { label: '학력', values: p.education_requirements || p.education || [] },
+    { label: '전공', values: p.major_requirements || p.major || [] },
+    { label: '지원대상', values: p.special_target || [] },
+  ];
+
+  const eligibility = eligibilitySections.flatMap((section) => {
+    const cleaned = cleanList(section.values).map(formatMultiline);
+    if (!cleaned.length) return [`${section.label} | 제한없음`];
+    return cleaned.map((v) => `${section.label}: ${v}`);
+  });
 
   return {
     id: p.id ?? p.source_id ?? p.sourceId ?? String(Math.random()),
     title: p.title || '',
-    category: p.source || '기타',
+    category,
     organization: p.provider || '',
-    description: p.summary || '',
+    description: formatMultiline(p.summary || ''),
     eligibility,
-    benefits: p.apply_method || '',
+    benefits: formatMultiline(p.policy_detail || p.apply_method || ''),
     applicationPeriod: toPeriod(p.start_date, p.end_date),
     ageRange: toAgeRange(p.min_age, p.max_age),
-    region: p.region_sigungu || p.region_sido || '',
+    region: regionBuckets[0],
+    regionBucket: regionBuckets[0],
+    regionBuckets,
     employmentStatus: p.employment_requirements || [],
-    tags: [
-      ...(p.special_target || []),
-      ...(p.major_requirements || []),
-      ...(p.education_requirements || []),
-      p.source || '',
-    ].filter(Boolean),
-    detailLink: p.detail_link || '',
+    tags: cleanList([
+      category,
+      ...(Array.isArray(p.target_detail) ? p.target_detail.filter((v) => v && v !== '/') : []),
+    ]),
+    detailLink:
+      (Array.isArray(p.detail_links) && p.detail_links[0]) ||
+      p.detail_link ||
+      (typeof p.detail_links === 'string' ? p.detail_links : ''),
     raw: p,
   };
 };

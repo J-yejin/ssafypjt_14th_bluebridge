@@ -1,5 +1,5 @@
 <template>
-  <div class="min-h-screen bg-gradient-to-br from-blue-50 via-sky-50 to-cyan-50">
+  <div class="min-h-screen bg-gradient-to-br from-blue-50 via-cyan-50 to-white">
     <Navbar />
     <router-view />
   </div>

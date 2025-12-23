@@ -1,5 +1,5 @@
 from django.urls import path
-from policies import views
+from . import views
 
 urlpatterns = [
     path("", views.policy_list, name="policy-list"),
