@@ -11,6 +11,7 @@ from .engine import (
     search_with_chroma,
     rerank_with_profile,
     assign_ux_scores,
+    apply_diversity_penalty,
     select_top3_with_reasons,
 )
 from .models import RecommendationLog
@@ -82,9 +83,10 @@ def recommend_detail(request):
         return Response({"detail": "query 필드가 필요합니다."}, status=400)
 
     profile, _ = Profile.objects.get_or_create(user=request.user)
-    policy_ids, scores = search_with_chroma(query_text=query, profile=profile, top_k=10)
+    policy_ids, scores = search_with_chroma(query_text=query, profile=profile, top_k=30)
     policies = fetch_policies_by_ids(policy_ids)
     reranked = rerank_with_profile(policies, scores, profile)
+    reranked = apply_diversity_penalty(reranked)
     reranked = assign_ux_scores(reranked)
     dist_map = {pid: dist for pid, dist in zip(policy_ids, scores)}
     serializer = PolicyBasicSerializer(reranked, many=True)

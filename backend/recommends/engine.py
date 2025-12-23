@@ -1,6 +1,6 @@
 """
-추천 엔진 핵심 로직: 임베딩(Gemini), Chroma 벡터 검색, 프로필 기반 리랭크,
-Top3 이유 생성까지 오케스트레이션한다.
+추천 엔진 로직: 텍스트 임베딩 + 프로필/쿼리 하이브리드 랭킹.
+Top3 이유는 Gemini로 생성.
 """
 
 import os
@@ -16,7 +16,7 @@ from policies.services.normalize_ai import normalize_query
 from policies.services.query_expand_ai import expand_query
 from policies.services import vector_db
 
-# 관리 명령 등 기존 사용자와 호환을 위해 상수 재노출
+# 경로/컬렉션 이름은 policies.services.vector_db와 공유
 CHROMA_DIR = vector_db.CHROMA_DIR
 COLLECTION_NAME = vector_db.COLLECTION_NAME
 
@@ -40,16 +40,12 @@ def _get_gms_key() -> str:
 
 
 def get_chroma_collection():
-    """
-    Chroma 퍼시스턴트 클라이언트 컬렉션 반환 (없으면 생성).
-    """
+    """Chroma 퍼시스턴트 클라이언트/컬렉션 반환."""
     return vector_db.get_or_create_collection(COLLECTION_NAME)
 
 
 def embed_texts(texts: List[str]) -> List[List[float]]:
-    """
-    Gemini text-embedding-004 호출 (순차 반복 호출).
-    """
+    """Gemini text-embedding-004 임베딩."""
     api_key = _get_gms_key()
     headers = {
         "Content-Type": "application/json",
@@ -73,25 +69,50 @@ def embed_texts(texts: List[str]) -> List[List[float]]:
     return embeddings
 
 
-def build_embedding_text(policy: Policy, max_chars: int = 3500) -> str:
+def build_embedding_text(policy: Policy, max_chars: int = 1500) -> str:
     """
-    임베딩용 텍스트 구성: policy_detail 우선, 부족하면 title/summary 보강.
+    임베딩 텍스트 구성(메타 정보 + 핵심 요약, policy_detail 제외):
+    - 메타 블록: 카테고리/지원유형/지역/키워드/특수대상
+    - 요약 블록: title + summary
     """
+    meta_bits = []
+    if policy.category:
+        meta_bits.append(f"카테고리: {policy.category}")
+    if policy.service_type:
+        meta_bits.append(f"지원유형: {policy.service_type}")
+    if policy.region_scope or policy.region_sido:
+        scope = policy.region_scope or ""
+        sido = policy.region_sido or ""
+        meta_bits.append(f"지역: {scope} {sido}".strip())
+    if policy.keywords:
+        meta_bits.append(f"키워드: {', '.join(map(str, policy.keywords))}")
+    special = policy.special_target or []
+    target_detail = policy.target_detail or []
+    if special or target_detail:
+        combined = special or target_detail
+        meta_bits.append(f"대상: {', '.join(map(str, combined))}")
+
     parts = []
+    if meta_bits:
+        parts.append(" | ".join(meta_bits))
     if policy.title:
         parts.append(policy.title)
     if policy.summary:
         parts.append(policy.summary)
-    if policy.policy_detail:
-        parts.append(policy.policy_detail)
+
     text = "\n".join([p for p in parts if p])
     return text[:max_chars]
 
 
+def _profile_interests(profile: Optional[Profile]) -> List[str]:
+    if not profile or not profile.interest:
+        return []
+    return [t.strip().lower() for t in profile.interest.split(",") if t.strip()]
+
+
 def build_where_filter(profile: Optional[Profile]) -> Dict:
     """
-    프로필 기반 메타데이터 필터 → Chroma where로 구성.
-    컬렉션 메타데이터와 구조가 맞아야 작동한다.
+    프로필 기반 메타데이터를 Chroma where에 반영(더 엄격하게 AND 비율 강화).
     """
     if profile is None:
         return {}
@@ -112,24 +133,15 @@ def build_where_filter(profile: Optional[Profile]) -> Dict:
                 {"$or": [{"max_age": {"$gte": profile.age}}, {"max_age": {"$eq": None}}]},
             ]
         }
-        if where:
-            where = {"$and": [where, age_clause]}
-        else:
-            where = age_clause
+        where = {"$and": [where, age_clause]} if where else age_clause
 
     if profile.employment_status:
         employment_clause = {"employment": {"$contains": profile.employment_status}}
-        if where:
-            where = {"$and": [where, employment_clause]}
-        else:
-            where = employment_clause
+        where = {"$and": [where, employment_clause]} if where else employment_clause
 
     if profile.major:
         major_clause = {"major": {"$contains": profile.major}}
-        if where:
-            where = {"$and": [where, major_clause]}
-        else:
-            where = major_clause
+        where = {"$and": [where, major_clause]} if where else major_clause
 
     return where
 
@@ -137,10 +149,10 @@ def build_where_filter(profile: Optional[Profile]) -> Dict:
 def search_with_chroma(
     query_text: str,
     profile: Optional[Profile],
-    top_k: int = 10,
+    top_k: int = 30,
 ):
     """
-    질의 전처리/확장 → 임베딩 → Chroma 검색 → policy_id·거리 반환.
+    질의/프로필 기반으로 Chroma 검색하여 policy_id·거리 반환.
     """
     normalized = normalize_query(query_text)
     expanded_list = expand_query(normalized)
@@ -164,9 +176,7 @@ def search_with_chroma(
 
 
 def fetch_policies_by_ids(policy_ids: List[int]) -> List[Policy]:
-    """
-    검색된 policy_id 순서대로 Policy 객체 리스트 반환.
-    """
+    """검색된 policy_id 순서대로 Policy 객체 리스트 반환."""
     policies = Policy.objects.filter(id__in=policy_ids)
     policy_map = {p.id: p for p in policies}
     ordered = [policy_map[i] for i in policy_ids if i in policy_map]
@@ -175,32 +185,47 @@ def fetch_policies_by_ids(policy_ids: List[int]) -> List[Policy]:
 
 def profile_match_score(policy: Policy, profile: Optional[Profile]) -> float:
     """
-    프로필-정책 매칭 점수(간단 가중치 기반).
+    프로필 적합도 점수(항목별 가중치 반영).
     """
     if not profile:
         return 0.0
     score = 0.0
 
+    # 지역 가중
     if profile.region:
         if policy.region_scope == "NATIONWIDE":
-            score += 0.3
+            score += 0.5
         if policy.region_sido and policy.region_sido == profile.region:
-            score += 0.2
+            score += 0.5
         if policy.applicable_regions and profile.region in policy.applicable_regions:
-            score += 5.0
+            score += 2.5
 
+    # 취업 상태
     if profile.employment_status and policy.employment:
         if profile.employment_status in policy.employment:
-            score += 1.5
+            score += 2.0
 
+    # 전공
     if profile.major and policy.major:
         if profile.major in policy.major:
             score += 1.0
 
+    # 특수대상
     if profile.special_targets and policy.special_target:
         intersect = set(profile.special_targets).intersection(set(policy.special_target))
         if intersect:
-            score += 1.0
+            score += 1.5
+
+    # 관심사 키워드 매칭(보너스)
+    interests = _profile_interests(profile)
+    if interests:
+        text_tokens = []
+        if policy.keywords:
+            text_tokens.extend([str(k).lower() for k in policy.keywords])
+        if policy.summary:
+            text_tokens.extend(policy.summary.lower().split())
+        if any(tok in " ".join(text_tokens) for tok in interests):
+            score += 0.8
 
     return score
 
@@ -209,12 +234,12 @@ def rerank_with_profile(
     policies: List[Policy],
     distances: List[float],
     profile: Optional[Profile],
-    weight_profile: float = 0.6,
-    weight_similarity: float = 0.4,
+    weight_profile: float = 0.7,
+    weight_similarity: float = 0.3,
 ) -> List[Policy]:
     """
-    벡터 유사도와 프로필 매칭 점수를 하이브리드로 리랭크.
-    distance를 similarity로 변환: sim = 1 / (1 + distance)
+    벡터 유사도와 프로필 매칭 점수를 결합해 하이브리드 랭킹.
+    distance -> similarity: sim = 1 / (1 + distance)
     """
     scored = []
     for policy, dist in zip(policies, distances):
@@ -231,9 +256,35 @@ def rerank_with_profile(
     return [p for _, p in scored]
 
 
+def apply_diversity_penalty(policies: List[Policy], alpha: float = 0.1) -> List[Policy]:
+    """
+    동일 카테고리/기관 반복에 패널티를 주어 다양성 확보.
+    """
+    if not policies:
+        return policies
+
+    category_count: Dict[str, int] = {}
+    provider_count: Dict[str, int] = {}
+    penalized: List[Policy] = []
+
+    for p in policies:
+        cat = (p.category or "").lower()
+        prov = (p.provider or "").lower()
+        penalty = alpha * (category_count.get(cat, 0) + provider_count.get(prov, 0))
+        p.hybrid_score = getattr(p, "hybrid_score", 0.0) - penalty
+        category_count[cat] = category_count.get(cat, 0) + 1
+        provider_count[prov] = provider_count.get(prov, 0) + 1
+        penalized.append(p)
+
+    penalized.sort(key=lambda x: getattr(x, "hybrid_score", 0.0), reverse=True)
+    return penalized
+
+
 def assign_ux_scores(policies: List[Policy]) -> List[Policy]:
     """
-    하이브리드 점수를 0~100 사이 UX 점수로 정규화하여 policy.ux_score에 저장.
+    하이브리드 점수를 0~100 UX 점수로 정규화 후 구간화.
+    - min==max이면 80으로 고정(과신 방지)
+    - 0~20% -> 0~40, 20~60% -> 40~70, 60~100% -> 70~100으로 재매핑
     """
     if not policies:
         return policies
@@ -244,8 +295,13 @@ def assign_ux_scores(policies: List[Policy]) -> List[Policy]:
 
     def normalize(x: float) -> int:
         if max_s == min_s:
-            return 100
-        return round((x - min_s) / (max_s - min_s) * 100)
+            return 80
+        base = (x - min_s) / (max_s - min_s) * 100
+        if base < 20:
+            return round(base / 20 * 40)
+        if base < 60:
+            return round(40 + (base - 20) / 40 * 30)
+        return round(70 + (base - 60) / 40 * 30)
 
     for policy, h in zip(policies, hybrids):
         policy.ux_score = normalize(h)
@@ -258,7 +314,7 @@ def select_top3_with_reasons(
     query: str,
 ) -> List[Dict]:
     """
-    Gemini 2.5 Flash Lite로 상위 3개 정책과 추천 이유 생성.
+    Gemini 2.5 Flash Lite로 3개 정책 추천 이유 생성.
     """
     api_key = _get_gms_key()
     return generate_top3_with_reasons(policies, profile, query, api_key)

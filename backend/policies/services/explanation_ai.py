@@ -15,12 +15,11 @@ GEMINI_GEN_URL = (
 
 def _parse_json_candidates(text: str) -> List[Dict]:
     """
-    모델 응답에서 JSON 리스트를 추출. 실패 시 빈 리스트 반환.
+    모델 응답에서 JSON 리스트만 추출. 실패 시 빈 리스트.
     """
     try:
         return json.loads(text)
     except Exception:
-        # 간단한 정규식 파서( "[{...}]" 패턴 ) 시도
         match = re.search(r"\[.*\]", text, re.DOTALL)
         if match:
             try:
@@ -37,7 +36,7 @@ def generate_top3_with_reasons(
     api_key: str,
 ) -> List[Dict]:
     """
-    Gemini 2.5 Flash Lite로 상위 3개 추천 + 이유 생성.
+    Gemini 2.5 Flash Lite로 3개 추천 + 이유 생성.
     """
     if not policies:
         return []
@@ -66,12 +65,14 @@ def generate_top3_with_reasons(
     candidates_str = "\n".join(items)
 
     prompt = (
-        "아래 사용자의 질의와 프로필에 맞는 정책 후보 중 최적의 3개를 골라주세요.\n"
-        "결과는 JSON 객체 리스트로 반환하며, 각 원소는 id와 reason 키를 가져야 합니다.\n"
-        "reason은 한국어로 2문장 이내로 간단히 설명해주세요.\n\n"
+        "사용자의 질의와 프로필에 맞는 정책 정보 중 최적의 3개를 골라주세요.\n"
+        "- 같은 카테고리만 반복하지 말고 다양하게 선정\n"
+        "- 지역/나이/취업/전공/특수대상/요청 키워드 중 일치 항목을 이유에 명시\n"
+        "- reason은 한국어 4문장 이내, 상세한 내용을 간결히 표현\n"
+        "- JSON만 반환, 각 객체는 id(숫자), reason(문자열) 포함\n\n"
         f"사용자 질의: {query}\n"
         f"사용자 프로필: {profile_str}\n"
-        f"정책 후보:\n{candidates_str}\n\n"
+        f"정책 정보:\n{candidates_str}\n\n"
         '출력 예시: [{"id": 1, "reason": "..."}]'
     )
 
