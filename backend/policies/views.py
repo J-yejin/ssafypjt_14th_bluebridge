@@ -98,7 +98,7 @@ def policy_search(request):
         qs = qs.filter(
             Q(region_scope="NATIONWIDE") |
             Q(region_sido=region_sido) |
-            Q(applicable_regions__contains=[region_sido])
+            Q(applicable_regions__icontains=region_sido)
         )
 
     region_sigungu = request.query_params.get("region_sigungu")
@@ -124,7 +124,7 @@ def policy_search(request):
     # =========================
     employment = request.query_params.get("employment")
     if employment:
-        qs = qs.filter(employment__contains=[employment])
+        qs = qs.filter(employment__icontains=employment)
 
     # =========================
     # 8. 신청 가능 여부 필터

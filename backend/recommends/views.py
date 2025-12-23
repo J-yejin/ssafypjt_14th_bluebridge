@@ -24,7 +24,7 @@ def _filter_policies_by_profile(qs, profile: Profile):
         qs = qs.filter(
             Q(region_scope="NATIONWIDE")
             | Q(region_sido=profile.region)
-            | Q(applicable_regions__contains=[profile.region])
+            | Q(applicable_regions__icontains=profile.region)
         )
     if profile.age:
         qs = qs.filter(
@@ -32,9 +32,9 @@ def _filter_policies_by_profile(qs, profile: Profile):
             Q(max_age__isnull=True) | Q(max_age__gte=profile.age),
         )
     if profile.employment_status:
-        qs = qs.filter(employment__contains=[profile.employment_status])
+        qs = qs.filter(employment__icontains=profile.employment_status)
     if profile.major:
-        qs = qs.filter(major__contains=[profile.major])
+        qs = qs.filter(major__icontains=profile.major)
     return qs
 
 

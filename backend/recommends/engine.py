@@ -108,28 +108,11 @@ def build_where_filter(profile: Optional[Profile]) -> Dict:
     if profile.age is not None:
         age_clause = {
             "$and": [
-                {"$or": [{"min_age": {"$lte": profile.age}}, {"min_age": {"$eq": None}}]},
-                {"$or": [{"max_age": {"$gte": profile.age}}, {"max_age": {"$eq": None}}]},
+                {"min_age": {"$lte": profile.age}},
+                {"max_age": {"$gte": profile.age}},
             ]
         }
-        if where:
-            where = {"$and": [where, age_clause]}
-        else:
-            where = age_clause
-
-    if profile.employment_status:
-        employment_clause = {"employment": {"$contains": profile.employment_status}}
-        if where:
-            where = {"$and": [where, employment_clause]}
-        else:
-            where = employment_clause
-
-    if profile.major:
-        major_clause = {"major": {"$contains": profile.major}}
-        if where:
-            where = {"$and": [where, major_clause]}
-        else:
-            where = major_clause
+        where = {"$and": [where, age_clause]} if where else age_clause
 
     return where
 
@@ -173,6 +156,19 @@ def fetch_policies_by_ids(policy_ids: List[int]) -> List[Policy]:
     return ordered
 
 
+def _is_unlimited(val) -> bool:
+    """
+    '제한없음' 값을 와일드카드로 간주.
+    """
+    if val is None:
+        return False
+    if isinstance(val, str):
+        return val.strip() == "제한없음"
+    if isinstance(val, (list, tuple, set)):
+        return any(_is_unlimited(v) for v in val)
+    return False
+
+
 def profile_match_score(policy: Policy, profile: Optional[Profile]) -> float:
     """
     프로필-정책 매칭 점수(간단 가중치 기반).
@@ -190,11 +186,15 @@ def profile_match_score(policy: Policy, profile: Optional[Profile]) -> float:
             score += 5.0
 
     if profile.employment_status and policy.employment:
-        if profile.employment_status in policy.employment:
+        if _is_unlimited(profile.employment_status) or _is_unlimited(policy.employment):
+            score += 1.5
+        elif profile.employment_status in policy.employment:
             score += 1.5
 
     if profile.major and policy.major:
-        if profile.major in policy.major:
+        if _is_unlimited(profile.major) or _is_unlimited(policy.major):
+            score += 1.0
+        elif profile.major in policy.major:
             score += 1.0
 
     if profile.special_targets and policy.special_target:
