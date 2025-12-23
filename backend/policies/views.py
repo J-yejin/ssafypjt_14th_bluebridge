@@ -2,13 +2,15 @@ from django.shortcuts import render
 
 # Create your views here.
 import random
-from rest_framework.decorators import api_view, permission_classes
-from rest_framework.response import Response
+from datetime import date
+
 from django.db.models import Q
+from django.db.models.functions import Lower
+from django.shortcuts import get_object_or_404
+from rest_framework.decorators import api_view, permission_classes
 from rest_framework.pagination import PageNumberPagination
 from rest_framework.permissions import IsAuthenticated
-from django.shortcuts import get_object_or_404
-from datetime import date
+from rest_framework.response import Response
 
 from .models import Policy, Wishlist
 from .serializers import PolicySerializer, PolicyListSerializer, WishlistCreateSerializer, WishlistItemSerializer
@@ -74,7 +76,13 @@ def policy_search(request):
     # =========================
     q = request.query_params.get("q")
     if q:
-        qs = qs.filter(search_summary__icontains=q)
+        q_lower = q.lower()
+        qs = qs.annotate(
+            lower_title=Lower("title"),
+            lower_search_summary=Lower("search_summary"),
+        ).filter(
+            Q(lower_title__contains=q_lower) | Q(lower_search_summary__contains=q_lower)
+        )
 
     # =========================
     # 3. 정책 유형 필터

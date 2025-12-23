@@ -1,6 +1,7 @@
+﻿import hashlib
+
 import chromadb
 from django.core.management.base import BaseCommand
-import hashlib
 
 from recommends.engine import (
     CHROMA_DIR,
@@ -11,26 +12,32 @@ from recommends.engine import (
 from policies.models import Policy
 
 
-def _meta_value(val):
+def _normalize_meta_value(val):
     """
-    메타데이터를 쿼리 친화적으로 가공.
-    리스트는 원소를 문자열 리스트로 유지해 $contains 필터와 호환되도록 한다.
+    Normalize metadata for Chroma:
+    - None -> None
+    - list/tuple/set -> lowercased, trimmed strings joined with "|"
+      (Chroma metadata must be scalar)
+    - scalar -> lowercased string
     """
     if val is None:
         return None
-    if isinstance(val, (str, int, float, bool)):
-        return val
-    if isinstance(val, list):
-        return ",".join([str(v) for v in val])
-    return str(val)
+    if isinstance(val, (list, tuple, set)):
+        normalized_list: List[str] = []
+        for v in val:
+            if v is None:
+                continue
+            normalized_list.append(str(v).strip().lower())
+        return "|".join([v for v in normalized_list if v])
+    return str(val).strip().lower()
 
 
 class Command(BaseCommand):
-    help = "활성 정책을 Chroma 컬렉션에 임베딩/업서트합니다."
+    help = "Build Chroma index for active policies."
 
     def add_arguments(self, parser):
         parser.add_argument("--batch-size", type=int, default=64)
-        parser.add_argument("--reset", action="store_true", help="기존 컬렉션 삭제 후 생성")
+        parser.add_argument("--reset", action="store_true", help="Drop existing collection before rebuild")
 
     def handle(self, *args, **options):
         batch_size = options["batch_size"]
@@ -50,7 +57,7 @@ class Command(BaseCommand):
                 COLLECTION_NAME, metadata={"hnsw:space": "cosine"}
             )
 
-        # 기존 메타데이터의 content_hash를 가져와 변경 여부 판단
+        # Load existing hashes to skip unchanged docs
         existing_hash = {}
         try:
             existing = collection.get(include=["metadatas", "ids"])
@@ -63,10 +70,10 @@ class Command(BaseCommand):
         qs = Policy.objects.filter(status="ACTIVE").order_by("id")
         total = qs.count()
         if total == 0:
-            self.stdout.write(self.style.WARNING("임베딩할 정책이 없습니다."))
+            self.stdout.write(self.style.WARNING("No policies to embed."))
             return
 
-        self.stdout.write(f"{total}개 정책 임베딩 시작 (batch={batch_size})")
+        self.stdout.write(f"{total} policies embedding (batch={batch_size})")
         processed = 0
         for start in range(0, total, batch_size):
             batch = list(qs[start : start + batch_size])
@@ -80,26 +87,38 @@ class Command(BaseCommand):
                 pid_str = str(p.id)
                 content_hash = hashlib.md5(text.encode("utf-8")).hexdigest()
 
-                # 기존과 동일한 콘텐츠면 스킵
+                # Skip if content unchanged
                 if existing_hash.get(pid_str) == content_hash:
                     continue
 
                 ids.append(pid_str)
                 docs.append(text)
+
                 meta_raw = {
-                    "policy_type": _meta_value(p.policy_type),
-                    "region_scope": _meta_value(p.region_scope),
-                    "region_sido": _meta_value(p.region_sido),
-                    "min_age": _meta_value(p.min_age),
-                    "max_age": _meta_value(p.max_age),
-                    "employment": _meta_value(p.employment),
-                    "education": _meta_value(p.education),
-                    "major": _meta_value(p.major),
-                    "special_target": _meta_value(p.special_target),
+                    "policy_type": _normalize_meta_value(p.policy_type),
+                    "region_scope": _normalize_meta_value(p.region_scope),
+                    "region_sido": _normalize_meta_value(p.region_sido),
+                    "min_age": p.min_age,
+                    "max_age": p.max_age,
+                    "employment": _normalize_meta_value(p.employment),
+                    "education": _normalize_meta_value(p.education),
+                    "major": _normalize_meta_value(p.major),
+                    "special_target": _normalize_meta_value(p.special_target),
+                    "keywords": _normalize_meta_value(getattr(p, "keywords", None)),
+                    "service_type": _normalize_meta_value(getattr(p, "service_type", None)),
+                    # change detection
                     "content_hash": content_hash,
                 }
-                # Chroma는 None을 허용하지 않으므로 제외
-                metadatas.append({k: v for k, v in meta_raw.items() if v is not None})
+
+                cleaned_meta = {}
+                for k, v in meta_raw.items():
+                    if v is None:
+                        continue
+                    if isinstance(v, list) and not v:
+                        continue
+                    cleaned_meta[k] = v
+
+                metadatas.append(cleaned_meta)
 
             if not ids:
                 continue
@@ -112,6 +131,6 @@ class Command(BaseCommand):
                 documents=docs,
             )
             processed += len(ids)
-            self.stdout.write(f"- 진행: {processed}/{total}")
+            self.stdout.write(f"- progress: {processed}/{total}")
 
-        self.stdout.write(self.style.SUCCESS("Chroma 인덱스 구축 완료"))
+        self.stdout.write(self.style.SUCCESS("Chroma index build done"))

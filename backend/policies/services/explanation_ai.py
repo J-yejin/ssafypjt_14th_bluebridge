@@ -1,4 +1,4 @@
-import json
+﻿import json
 import re
 from typing import Dict, List, Optional
 
@@ -15,12 +15,11 @@ GEMINI_GEN_URL = (
 
 def _parse_json_candidates(text: str) -> List[Dict]:
     """
-    모델 응답에서 JSON 리스트를 추출. 실패 시 빈 리스트 반환.
+    모델 응답에서 JSON 리스트 추출. 실패 시 빈 리스트.
     """
     try:
         return json.loads(text)
     except Exception:
-        # 간단한 정규식 파서( "[{...}]" 패턴 ) 시도
         match = re.search(r"\[.*\]", text, re.DOTALL)
         if match:
             try:
@@ -51,10 +50,18 @@ def generate_top3_with_reasons(
             profile_desc.append(f"지역: {profile.region}")
         if profile.age is not None:
             profile_desc.append(f"나이: {profile.age}")
+        if profile.gender:
+            profile_desc.append(f"성별: {profile.gender}")
         if profile.employment_status:
             profile_desc.append(f"취업상태: {profile.employment_status}")
+        if profile.education_level:
+            profile_desc.append(f"학력: {profile.education_level}")
         if profile.major:
             profile_desc.append(f"전공: {profile.major}")
+        if profile.income_quintile:
+            profile_desc.append(f"소득분위: {profile.income_quintile}")
+        if profile.interest:
+            profile_desc.append(f"관심사: {profile.interest}")
         if profile.special_targets:
             profile_desc.append(f"특수대상: {', '.join(profile.special_targets)}")
     profile_str = "; ".join(profile_desc) if profile_desc else "정보 없음"
@@ -66,13 +73,16 @@ def generate_top3_with_reasons(
     candidates_str = "\n".join(items)
 
     prompt = (
-        "아래 사용자의 질의와 프로필에 맞는 정책 후보 중 최적의 3개를 골라주세요.\n"
-        "결과는 JSON 객체 리스트로 반환하며, 각 원소는 id와 reason 키를 가져야 합니다.\n"
-        "reason은 한국어로 2문장 이내로 간단히 설명해주세요.\n\n"
+        "당신은 정책 상담가입니다. 아래 사용자의 질의/프로필에 가장 적합한 정책 3개를 고르고, "
+        "왜 맞는지 근거를 짧게 설명하세요.\n"
+        "- JSON 리스트로 반환하며 각 객체는 id, reason을 포함합니다.\n"
+        "- reason은 한국어로 1~2문장, 180자 이내. 사용자의 조건(지역/나이/성별/취업상태/전공/특수대상/관심사/소득분위/학력)과 "
+        "정책의 지원 대상·혜택·지역이 어떻게 맞는지 구체적으로 적으세요.\n"
+        "- 과장 없이 사실 기반, 빈 reason 없이 반드시 작성.\n\n"
         f"사용자 질의: {query}\n"
         f"사용자 프로필: {profile_str}\n"
-        f"정책 후보:\n{candidates_str}\n\n"
-        '출력 예시: [{"id": 1, "reason": "..."}]'
+        f"정책 후보들:\n{candidates_str}\n\n"
+        '출력 예시: [{"id": 1, "reason": "지역/연령/대상 매칭 근거를 1~2문장으로"}]'
     )
 
     payload = {
@@ -100,7 +110,37 @@ def generate_top3_with_reasons(
         pid = item.get("id")
         reason = item.get("reason")
         if pid in valid_ids and reason:
-            filtered.append({"id": pid, "reason": reason})
+            filtered.append({"id": pid, "reason": str(reason)[:180]})
         if len(filtered) >= 3:
             break
-    return filtered
+
+    # Fallback: 모델이 reason을 못 주면 간단한 규칙 기반 이유 생성
+    if len(filtered) < 3:
+        for p in policies:
+            if len(filtered) >= 3:
+                break
+            if p.id in {f["id"] for f in filtered}:
+                continue
+            # 간단한 근거 생성
+            why = []
+            if profile and profile.region:
+                if p.region_scope == "NATIONWIDE":
+                    why.append("전국 대상이라 지역 제약이 없습니다.")
+                elif p.region_sido and profile.region in p.region_sido:
+                    why.append(f"{profile.region} 거주자가 신청 가능합니다.")
+            if profile and profile.age is not None:
+                if p.min_age and p.min_age <= profile.age:
+                    why.append(f"{profile.age}세가 최소 연령 요건을 충족합니다.")
+                if p.max_age and p.max_age >= profile.age:
+                    why.append(f"{profile.age}세가 최대 연령 요건을 충족합니다.")
+            if profile and profile.employment_status and p.employment:
+                if profile.employment_status in p.employment:
+                    why.append(f"{profile.employment_status} 대상 정책입니다.")
+            if profile and profile.major and p.major:
+                if profile.major in p.major:
+                    why.append("전공 요건이 맞습니다.")
+            if not why:
+                why.append("프로필 정보와 지원 대상이 크게 충돌하지 않습니다.")
+            filtered.append({"id": p.id, "reason": " ".join(why)[:180]})
+
+    return filtered[:3]
