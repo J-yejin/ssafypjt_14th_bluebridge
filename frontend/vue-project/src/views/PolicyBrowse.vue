@@ -201,7 +201,8 @@ const filteredAndSortedPolicies = computed(() => {
 
     const matchesCategory = selectedCategory.value === '' || policy.category === selectedCategory.value;
     const matchesRegion =
-      selectedRegion.value === '' || policy.regionBucket === selectedRegion.value;
+      selectedRegion.value === '' ||
+      (policy.regionBuckets || [policy.regionBucket]).includes(selectedRegion.value);
 
     return matchesSearch && matchesCategory && matchesRegion;
   });

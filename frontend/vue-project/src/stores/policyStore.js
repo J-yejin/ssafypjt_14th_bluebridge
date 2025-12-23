@@ -21,11 +21,14 @@ const cleanList = (items = []) => {
   const seen = new Set();
   const result = [];
   items.forEach((item) => {
-    const value = (item || '').toString().trim();
-    if (!value || value === '-/-') return;
-    if (seen.has(value)) return;
-    seen.add(value);
-    result.push(value);
+    const raw = (item || '').toString().trim();
+    if (!raw) return;
+    // 선행/후행 대시·슬래시 제거 (예: "-/도내 청년 누구나" -> "도내 청년 누구나")
+    const stripped = raw.replace(/^[-/]+/, '').replace(/[-/]+$/, '').trim();
+    if (!stripped) return;
+    if (seen.has(stripped)) return;
+    seen.add(stripped);
+    result.push(stripped);
   });
   return result;
 };
@@ -33,10 +36,7 @@ const cleanList = (items = []) => {
 const transformPolicy = (p) => {
   if (!p) return null;
 
-  const mapRegionToBucket = (region = '') => {
-    const r = (region || '').trim();
-    if (!r) return '기타';
-    if (r.includes('전국')) return '전국';
+  const mapRegionsToBuckets = (applicableRegions = [], fallback = '') => {
     const topLevel = [
       '서울특별시',
       '부산광역시',
@@ -56,8 +56,27 @@ const transformPolicy = (p) => {
       '경상남도',
       '제주특별자치도',
     ];
-    const found = topLevel.find((name) => r.includes(name));
-    return found || '기타';
+
+    const mapName = (name = '') => {
+      const r = String(name || '').trim();
+      if (!r) return '';
+      if (r.includes('전국')) return '전국';
+      const found = topLevel.find((t) => r.includes(t));
+      return found || r;
+    };
+
+    const regions = Array.isArray(applicableRegions) ? applicableRegions : [];
+    const cleaned = [];
+    const seen = new Set();
+    regions.map(mapName).filter(Boolean).forEach((r) => {
+      if (seen.has(r)) return;
+      seen.add(r);
+      cleaned.push(r);
+    });
+    if (cleaned.length) return cleaned;
+
+    const fb = mapName(fallback);
+    return fb ? [fb] : ['전국'];
   };
 
   const mapToBucket = (value = '') => {
@@ -98,7 +117,7 @@ const transformPolicy = (p) => {
   }
 
   const region = p.region_sigungu || p.region_sido || '';
-  const regionBucket = mapRegionToBucket(region);
+  const regionBuckets = mapRegionsToBuckets(p.applicable_regions, region);
 
   const eligibilitySections = [
     { label: '취업상황 ', values: p.employment_requirements || p.employment || [] },
@@ -123,8 +142,9 @@ const transformPolicy = (p) => {
     benefits: p.apply_method || '',
     applicationPeriod: toPeriod(p.start_date, p.end_date),
     ageRange: toAgeRange(p.min_age, p.max_age),
-    region,
-    regionBucket,
+    region: regionBuckets[0],
+    regionBucket: regionBuckets[0],
+    regionBuckets,
     employmentStatus: p.employment_requirements || [],
     tags: cleanList([
       category,
