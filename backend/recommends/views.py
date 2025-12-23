@@ -16,25 +16,88 @@ from .engine import (
 from .models import RecommendationLog
 
 
+def _normalize_region(region: str) -> str:
+    """
+    프로필 지역을 광역 시·도 명칭으로 정규화한다.
+    """
+    if not region:
+        return ""
+    name = region.strip()
+    mapping = {
+        "서울": "서울특별시",
+        "서울시": "서울특별시",
+        "부산": "부산광역시",
+        "부산시": "부산광역시",
+        "대구": "대구광역시",
+        "대구시": "대구광역시",
+        "인천": "인천광역시",
+        "인천시": "인천광역시",
+        "광주": "광주광역시",
+        "광주시": "광주광역시",
+        "대전": "대전광역시",
+        "대전시": "대전광역시",
+        "울산": "울산광역시",
+        "울산시": "울산광역시",
+        "세종": "세종특별자치시",
+        "세종시": "세종특별자치시",
+        "경기": "경기도",
+        "경기도": "경기도",
+        "강원": "강원특별자치도",
+        "강원도": "강원특별자치도",
+        "충북": "충청북도",
+        "충북도": "충청북도",
+        "충남": "충청남도",
+        "충남도": "충청남도",
+        "전북": "전라북도",
+        "전북도": "전라북도",
+        "전남": "전라남도",
+        "전남도": "전라남도",
+        "경북": "경상북도",
+        "경북도": "경상북도",
+        "경남": "경상남도",
+        "경남도": "경상남도",
+        "제주": "제주특별자치도",
+        "제주도": "제주특별자치도",
+    }
+    return mapping.get(name, name)
+
+
 def _filter_policies_by_profile(qs, profile: Profile):
     """
     기본 추천용 프로필 기반 필터.
     """
     if profile.region:
-        qs = qs.filter(
-            Q(region_scope="NATIONWIDE")
-            | Q(region_sido=profile.region)
-            | Q(applicable_regions__contains=[profile.region])
+        target_region = _normalize_region(profile.region)
+        # 광역시/도 접두어로도 매칭되도록 보조 문자열을 만든다.
+        base_region = (
+            target_region.replace("특별자치시", "")
+            .replace("특별자치도", "")
+            .replace("특별시", "")
+            .replace("광역시", "")
+            .replace("자치도", "")
+            .replace("도", "")
+            .strip()
         )
+        region_filter = (
+            Q(region_scope="NATIONWIDE")
+            | Q(region_sido=target_region)
+            | Q(region_sido__icontains=target_region)
+            | Q(applicable_regions__icontains=target_region)
+        )
+        if base_region:
+            region_filter |= Q(region_sido__icontains=base_region) | Q(
+                applicable_regions__icontains=base_region
+            )
+        qs = qs.filter(region_filter)
     if profile.age:
         qs = qs.filter(
             Q(min_age__isnull=True) | Q(min_age__lte=profile.age),
             Q(max_age__isnull=True) | Q(max_age__gte=profile.age),
         )
     if profile.employment_status:
-        qs = qs.filter(employment__contains=[profile.employment_status])
+        qs = qs.filter(employment__icontains=profile.employment_status)
     if profile.major:
-        qs = qs.filter(major__contains=[profile.major])
+        qs = qs.filter(major__icontains=profile.major)
     return qs
 
 
@@ -82,10 +145,16 @@ def recommend_detail(request):
         return Response({"detail": "query ?? ?????"}, status=400)
 
     profile, _ = Profile.objects.get_or_create(user=request.user)
-    policy_ids, scores = search_with_chroma(query_text=query, profile=profile, top_k=20)
+    # 더 많은 후보를 확보해 필터 이후에도 결과를 남긴다.
+    policy_ids, scores = search_with_chroma(query_text=query, profile=profile, top_k=80)
 
     qs = Policy.objects.filter(id__in=policy_ids)
-    qs = _filter_policies_by_profile(qs, profile)
+    filtered_qs = _filter_policies_by_profile(qs, profile)
+    # 필터 적용 후 모두 탈락하면 필터를 완화해 id 매칭만 유지
+    if not filtered_qs.exists():
+        filtered_qs = qs
+    qs = filtered_qs
+
     policy_map = {p.id: p for p in qs}
     dist_map = {pid: dist for pid, dist in zip(policy_ids, scores)}
 

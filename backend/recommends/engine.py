@@ -20,7 +20,7 @@ from policies.services import vector_db
 CHROMA_DIR = vector_db.CHROMA_DIR
 COLLECTION_NAME = vector_db.COLLECTION_NAME
 
-# Gemini 설정
+# Gemini 설정 (컬렉션과 동일한 차원 유지: text-embedding-004 → 768차원)
 GEMINI_EMBED_MODEL = "models/text-embedding-004"
 GEMINI_EMBED_URL = (
     "https://gms.ssafy.io/gmsapi/generativelanguage.googleapis.com/"
@@ -48,22 +48,29 @@ def get_chroma_collection():
 
 def embed_texts(texts: List[str]) -> List[List[float]]:
     """
-    Gemini text-embedding-004 호출 (순차 반복 호출).
+    Gemini text-embedding 호출 (순차 반복 호출).
     """
     api_key = _get_gms_key()
     headers = {
         "Content-Type": "application/json",
-        "x-goog-api-key": api_key,
     }
 
     embeddings: List[List[float]] = []
     for text in texts:
         payload = {
             "model": GEMINI_EMBED_MODEL,
-            "content": {"parts": [{"text": text}]},
-            "taskType": "RETRIEVAL_DOCUMENT",
+            "content": {
+                "parts": [
+                    {"text": text}
+                ]
+            },
         }
-        resp = requests.post(GEMINI_EMBED_URL, headers=headers, json=payload, timeout=30)
+        resp = requests.post(
+            f"{GEMINI_EMBED_URL}?key={api_key}",
+            headers=headers,
+            json=payload,
+            timeout=30,
+        )
         resp.raise_for_status()
         data = resp.json()
         embedding = data.get("embedding", {}).get("values")
@@ -151,25 +158,37 @@ def search_with_chroma(
     top_k: int = 50,
 ):
     """
-    ?? ??? ???? Chroma?? ?? ??? ???? ???? ???? ???.
     """
     normalized = normalize_query(query_text)
     expanded_list = expand_query(normalized)
     combined_query = " ".join(expanded_list) if expanded_list else normalized
 
-    [query_embedding] = embed_texts([combined_query])
+    # 1) Chroma 시도
+    try:
+        [query_embedding] = embed_texts([combined_query])
+        result = vector_db.query(
+            query_embeddings=[query_embedding],
+            where=None,
+            top_k=top_k,
+            name=COLLECTION_NAME,
+        )
+        ids = result.get("ids", [[]])[0] if result else []
+        scores = result.get("distances", [[]])[0] if result else []
+        policy_ids = [int(pid) for pid in ids if pid is not None]
+        if policy_ids:
+            return policy_ids, scores
+    except Exception as exc:  # 네트워크/임베딩 장애 시
+        print(f"[WARN] Chroma search failed, fallback to ORM: {exc}")
 
-    result = vector_db.query(
-        query_embeddings=[query_embedding],
-        where=None,
-        top_k=top_k,
-        name=COLLECTION_NAME,
-    )
-
-    ids = result.get("ids", [[]])[0] if result else []
-    scores = result.get("distances", [[]])[0] if result else []
-    policy_ids = [int(pid) for pid in ids if pid is not None]
-
+    # 2) Fallback: ORM like 검색 (Chroma 인덱스 없을 때)
+    qs = Policy.objects.filter(status="ACTIVE").filter(
+        Q(title__icontains=combined_query)
+        | Q(summary__icontains=combined_query)
+        | Q(search_summary__icontains=combined_query)
+    ).order_by("id")[:top_k]
+    policy_ids = list(qs.values_list("id", flat=True))
+    # 거리 점수 대신 0.0으로 채움
+    scores = [0.0 for _ in policy_ids]
     return policy_ids, scores
 
 
@@ -221,8 +240,9 @@ def rerank_with_profile(
     policies: List[Policy],
     distances: List[float],
     profile: Optional[Profile],
-    weight_profile: float = 0.6,
-    weight_similarity: float = 0.4,
+    # 쿼리 유사도 비중을 조금 더 높여서 검색 품질 개선
+    weight_profile: float = 0.4,
+    weight_similarity: float = 0.6,
 ) -> List[Policy]:
     """
     벡터 유사도와 프로필 매칭 점수를 하이브리드로 리랭크.

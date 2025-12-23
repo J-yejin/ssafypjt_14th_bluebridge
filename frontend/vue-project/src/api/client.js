@@ -54,10 +54,14 @@ export async function fetchPolicyById(id) {
 }
 
 export async function fetchRecommendations(payload) {
-  return request('/policies/recommend/', {
-    method: 'POST',
-    body: JSON.stringify(payload),
-  });
+  // 검색어가 있으면 AI 검색 기반 추천, 없으면 기본 프로필 기반 추천
+  if (payload && payload.query) {
+    return request('/recommend/detail/', {
+      method: 'POST',
+      body: JSON.stringify({ query: payload.query }),
+    });
+  }
+  return request('/recommend/');
 }
 
 export async function fetchProfile() {

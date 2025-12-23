@@ -85,9 +85,10 @@
       </div>
 
       <!-- RAG Results -->
-      <div v-if="showRagResults && ragBasedRecommendations.length > 0" class="mb-12">
+      <div v-if="showRagResults" class="mb-12">
         <h2 class="text-blue-900 mb-6 text-3xl">AI 추천 결과</h2>
-        <div class="grid lg:grid-cols-2 gap-8">
+        <div v-if="ragLoading" class="text-center text-gray-500 py-10">검색 중입니다...</div>
+        <div v-else-if="ragBasedRecommendations.length > 0" class="grid lg:grid-cols-2 gap-8">
           <router-link
             v-for="policy in ragBasedRecommendations"
             :key="policy.id"
@@ -122,6 +123,7 @@
             </div>
           </router-link>
         </div>
+        <div v-else class="text-center text-gray-500 py-10">검색 결과가 없습니다.</div>
       </div>
 
       <!-- Profile-based Recommendations -->
@@ -186,6 +188,7 @@ const isLoggedIn = computed(() => authStore.isAuthenticated);
 const ragQuery = ref('');
 const showRagResults = ref(false);
 const ragBasedRecommendations = ref([]);
+const ragLoading = ref(false);
 const recommendedFromApi = ref([]);
 
 const loadRecommendations = async () => {
@@ -247,8 +250,18 @@ const handleRagSearch = () => {
     showRagResults.value = false;
     return;
   }
-  ragBasedRecommendations.value = policyStore.searchPolicies(query);
-  showRagResults.value = true;
+  (async () => {
+    ragLoading.value = true;
+    try {
+      const results = await policyStore.recommendPolicies({ query });
+      ragBasedRecommendations.value = results || [];
+    } catch (e) {
+      ragBasedRecommendations.value = policyStore.searchPolicies(query);
+    } finally {
+      showRagResults.value = true;
+      ragLoading.value = false;
+    }
+  })();
 };
 
 const goLogin = () => router.push('/login');

@@ -229,8 +229,17 @@ export const usePolicyStore = defineStore('policy', () => {
     error.value = null;
     try {
       const data = await fetchRecommendations(payload);
-      if (Array.isArray(data)) {
-        return data.map(transformPolicy).filter(Boolean);
+      // 쿼리가 있으면 /recommend/detail 응답(객체)에서 results를 사용
+      if (payload?.query) {
+        const list = Array.isArray(data) ? data : data?.results;
+        if (Array.isArray(list)) {
+          return list.map(transformPolicy).filter(Boolean);
+        }
+      } else {
+        // 기본 프로필 추천(/recommend/)
+        if (Array.isArray(data)) {
+          return data.map(transformPolicy).filter(Boolean);
+        }
       }
     } catch (err) {
       error.value = err.message || '추천 결과를 불러오지 못했습니다';
