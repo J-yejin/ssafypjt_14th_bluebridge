@@ -93,12 +93,30 @@
 
       <!-- 목록 -->
       <div class="grid lg:grid-cols-2 gap-8">
-        <router-link
+        <div
           v-for="policy in filteredAndSortedPolicies"
           :key="policy.id"
-          :to="`/policy/${policy.id}`"
-          class="bg-white rounded-2xl shadow-md hover:shadow-xl transition-all p-8 border-2 border-transparent hover:border-blue-200 group"
+          role="button"
+          tabindex="0"
+          class="bg-white rounded-2xl shadow-md hover:shadow-xl transition-all p-8 border-2 border-transparent hover:border-blue-200 group relative cursor-pointer"
+          @click="openPolicy(policy.id)"
+          @keydown.enter.prevent="openPolicy(policy.id)"
+          @keydown.space.prevent="openPolicy(policy.id)"
         >
+          <button
+            type="button"
+            class="absolute bottom-0 right-0 p-1 hover:scale-105 transition-transform"
+            style="transform: translate(-18px, -8px);"
+            :aria-pressed="policyStore.isWishlisted(policy.id)"
+            @click.stop="toggleWishlist(policy.id)"
+            title="관심 정책"
+          >
+            <Heart
+              :size="20"
+              :stroke="policyStore.isWishlisted(policy.id) ? '#ef4444' : '#9ca3af'"
+              :fill="policyStore.isWishlisted(policy.id) ? '#ef4444' : 'none'"
+            />
+          </button>
           <div class="flex items-start justify-between mb-4">
             <div class="flex items-center gap-3">
               <span class="px-4 py-1.5 bg-blue-100 text-blue-700 rounded-full">
@@ -119,7 +137,7 @@
               #{{ tag }}
             </span>
           </div>
-        </router-link>
+        </div>
 
         <div v-if="!policyStore.loading && filteredAndSortedPolicies.length === 0" class="col-span-2 text-center py-20 bg-white rounded-2xl shadow-md">
           <div class="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
@@ -139,10 +157,14 @@
 
 <script setup>
 import { ref, computed, onMounted } from 'vue';
-import { Search, Filter, X } from 'lucide-vue-next';
+import { Search, Filter, X, Heart } from 'lucide-vue-next';
 import { usePolicyStore } from '../stores/policyStore';
+import { useAuthStore } from '../stores/authStore';
+import { useRouter } from 'vue-router';
 
 const policyStore = usePolicyStore();
+const authStore = useAuthStore();
+const router = useRouter();
 const searchTerm = ref('');
 const selectedCategory = ref('');
 const selectedRegion = ref('');
@@ -187,7 +209,27 @@ const regions = [
 
 onMounted(() => {
   policyStore.loadPolicies();
+  if (authStore.isAuthenticated) {
+    policyStore.loadWishlist();
+  }
 });
+
+const toggleWishlist = async (policyId) => {
+  if (!authStore.isAuthenticated) {
+    alert('로그인 후 이용해주세요.');
+    return;
+  }
+  try {
+    await policyStore.toggleWishlist(policyId);
+  } catch (err) {
+    const message = err?.message || '';
+    if (message.toLowerCase().includes('credentials')) {
+      alert('로그인 후 이용해주세요.');
+      return;
+    }
+    alert(message || '관심정책 처리에 실패했습니다.');
+  }
+};
 
 const filteredAndSortedPolicies = computed(() => {
   const list = policyStore.policies || [];
@@ -220,5 +262,10 @@ const resetFilters = () => {
   searchTerm.value = '';
   selectedCategory.value = '';
   selectedRegion.value = '';
+};
+
+const openPolicy = (policyId) => {
+  if (policyId === undefined || policyId === null || policyId === '') return;
+  router.push(`/policy/${policyId}`);
 };
 </script>

@@ -66,7 +66,7 @@
               to="/profile"
               :class="[
                 'flex items-center gap-2 px-5 py-2.5 rounded-lg transition-all',
-                isActive('/profile') ? 'accent-button text-white shadow-md' : 'bg-gray-50 text-gray-700 hover:bg-gray-100'
+                isProfileActive ? 'accent-button text-white shadow-md' : 'bg-gray-50 text-gray-700 hover:bg-gray-100'
               ]"
             >
               <User :size="16" />
@@ -109,6 +109,7 @@ import { useUserStore } from '../stores/userStore';
 const route = useRoute();
 const router = useRouter();
 const isActive = (path) => computed(() => route.path === path).value;
+const isProfileActive = computed(() => route.path.startsWith('/profile'));
 const authStore = useAuthStore();
 const userStore = useUserStore();
 const isLoggedIn = computed(() => authStore.isAuthenticated);

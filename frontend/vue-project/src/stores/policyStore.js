@@ -1,6 +1,13 @@
 import { defineStore } from 'pinia';
 import { ref } from 'vue';
-import { fetchPolicies, fetchPolicyById, fetchRecommendations } from '../api/client';
+import {
+  fetchPolicies,
+  fetchPolicyById,
+  fetchRecommendations,
+  fetchWishlist,
+  createWishlist,
+  deleteWishlist,
+} from '../api/client';
 import { mockPolicies } from '../data/mockPolicies';
 
 const toPeriod = (start, end) => {
@@ -175,6 +182,7 @@ export const usePolicyStore = defineStore('policy', () => {
   const policies = ref([...mockPolicies]);
   const loading = ref(false);
   const error = ref(null);
+  const wishlistIds = ref([]);
 
   const setPolicies = (list) => {
     policies.value = list || [];
@@ -201,6 +209,9 @@ export const usePolicyStore = defineStore('policy', () => {
   };
 
   const loadPolicyById = async (id) => {
+    if (id === undefined || id === null || id === '') {
+      return null;
+    }
     loading.value = true;
     error.value = null;
     try {
@@ -268,6 +279,45 @@ export const usePolicyStore = defineStore('policy', () => {
       .slice(0, 6);
   };
 
+  const loadWishlist = async () => {
+    try {
+      const data = await fetchWishlist();
+      const ids = Array.isArray(data)
+        ? data
+            .map((item) => item?.policy?.id ?? item?.policy_id ?? item?.policy)
+            .filter((id) => id !== undefined && id !== null)
+            .map((id) => String(id))
+        : [];
+      wishlistIds.value = ids;
+    } catch (_) {
+      wishlistIds.value = [];
+    }
+  };
+
+  const isWishlisted = (policyId) => wishlistIds.value.includes(String(policyId));
+
+  const addToWishlist = async (policyId) => {
+    await createWishlist(policyId);
+    const id = String(policyId);
+    if (!wishlistIds.value.includes(id)) {
+      wishlistIds.value = [...wishlistIds.value, id];
+    }
+  };
+
+  const removeFromWishlist = async (policyId) => {
+    await deleteWishlist(policyId);
+    const id = String(policyId);
+    wishlistIds.value = wishlistIds.value.filter((item) => item !== id);
+  };
+
+  const toggleWishlist = async (policyId) => {
+    if (isWishlisted(policyId)) {
+      await removeFromWishlist(policyId);
+    } else {
+      await addToWishlist(policyId);
+    }
+  };
+
   return {
     policies,
     loading,
@@ -278,5 +328,10 @@ export const usePolicyStore = defineStore('policy', () => {
     loadPolicyById,
     recommendPolicies,
     searchPolicies,
+    loadWishlist,
+    isWishlisted,
+    addToWishlist,
+    removeFromWishlist,
+    toggleWishlist,
   };
 });
