@@ -106,7 +106,7 @@ class PolicyListSerializer(serializers.ModelSerializer):
 
             "provider",
 
-            "benefit_type",
+            "service_type",
 
             "status",
         ]
@@ -122,8 +122,8 @@ class PolicyBasicSerializer(serializers.ModelSerializer):
             "title",
             "summary",
             "source",
+            "region_scope",
             "region_sido",
-            "region_sigungu",
             "end_date",
             "status",
         ]
