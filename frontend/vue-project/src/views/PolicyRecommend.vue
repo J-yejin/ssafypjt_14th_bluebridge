@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <div class="min-h-screen">
     <!-- 로그인 안내 -->
     <div v-if="!isLoggedIn" class="min-h-screen flex items-center justify-center">
@@ -109,7 +109,7 @@
                 </div>
               </div>
               <h3 class="text-blue-900 mb-3 text-2xl group-hover:text-blue-700 transition-colors">{{ policy.title }}</h3>
-              <p class="text-gray-600 mb-5 line-clamp-2 leading-relaxed">{{ policy.description }}</p>
+    
               <div class="flex flex-wrap gap-2">
                 <span
                   v-for="tag in policy.tags"
@@ -144,7 +144,7 @@
               <span class="text-gray-500 bg-gray-50 px-3 py-1 rounded-full text-sm">{{ policy.region }}</span>
             </div>
             <h3 class="text-blue-900 mb-3 text-2xl group-hover:text-blue-700 transition-colors">{{ policy.title }}</h3>
-            <p class="text-gray-600 mb-5 line-clamp-2 leading-relaxed">{{ policy.description }}</p>
+  
             <div class="flex flex-wrap gap-2">
               <span
                 v-for="tag in policy.tags"
