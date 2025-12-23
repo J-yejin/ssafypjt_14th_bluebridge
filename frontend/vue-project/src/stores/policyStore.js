@@ -17,6 +17,19 @@ const toAgeRange = (minAge, maxAge) => {
   return `${maxAge}-`;
 };
 
+const formatMultiline = (text = '') => {
+  const raw = (text || '').toString();
+  if (!raw) return '';
+  return raw
+    .replace(/\r\n|\r/g, '\n')
+    .replace(/\\n/g, '\n')
+    .replace(/n\//g, '\n') // handle n/ markers as new lines
+    .replace(/[■□▪▫▣◾◽◼◻※]/g, '\n$& ') // keep bullet/box symbols but move to a new line
+    .replace(/\s*-\s*/g, '\n- ') // break dash-separated bullets into new lines
+    .replace(/\n{2,}/g, '\n') // collapse multiple blank lines
+    .trim();
+};
+
 const cleanList = (items = []) => {
   const seen = new Set();
   const result = [];
@@ -127,7 +140,7 @@ const transformPolicy = (p) => {
   ];
 
   const eligibility = eligibilitySections.flatMap((section) => {
-    const cleaned = cleanList(section.values);
+    const cleaned = cleanList(section.values).map(formatMultiline);
     if (!cleaned.length) return [`${section.label} | 제한없음`];
     return cleaned.map((v) => `${section.label}: ${v}`);
   });
@@ -137,9 +150,9 @@ const transformPolicy = (p) => {
     title: p.title || '',
     category,
     organization: p.provider || '',
-    description: p.summary || '',
+    description: formatMultiline(p.summary || ''),
     eligibility,
-    benefits: p.policy_detail || p.apply_method || '',
+    benefits: formatMultiline(p.policy_detail || p.apply_method || ''),
     applicationPeriod: toPeriod(p.start_date, p.end_date),
     ageRange: toAgeRange(p.min_age, p.max_age),
     region: regionBuckets[0],
@@ -150,7 +163,10 @@ const transformPolicy = (p) => {
       category,
       ...(Array.isArray(p.target_detail) ? p.target_detail.filter((v) => v && v !== '/') : []),
     ]),
-    detailLink: p.detail_link || '',
+    detailLink:
+      (Array.isArray(p.detail_links) && p.detail_links[0]) ||
+      p.detail_link ||
+      (typeof p.detail_links === 'string' ? p.detail_links : ''),
     raw: p,
   };
 };
