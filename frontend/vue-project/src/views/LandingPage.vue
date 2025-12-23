@@ -293,9 +293,9 @@ const featureCards = [
 }
 
 .btn.primary {
-  background: linear-gradient(135deg, #9fdcff 0%, #5cbcff 100%);
-  color: #0b2f4a;
-  box-shadow: 0 10px 25px rgba(92, 188, 255, 0.35);
+  background: linear-gradient(135deg, #24b47e 0%, #3b82f6 100%);
+  color: #fff;
+  box-shadow: 0 10px 25px rgba(36, 180, 126, 0.32);
 }
 
 .btn.ghost {
