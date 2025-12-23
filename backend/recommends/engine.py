@@ -221,10 +221,35 @@ def rerank_with_profile(
         sim = 1.0 / (1.0 + dist) if dist is not None else 0.0
         pscore = profile_match_score(policy, profile)
         hybrid = weight_profile * pscore + weight_similarity * sim
+        # 디버깅/UX 노출용 점수 보관
+        policy.profile_score = pscore
+        policy.query_similarity = sim
+        policy.hybrid_score = hybrid
         scored.append((hybrid, policy))
 
     scored.sort(key=lambda x: x[0], reverse=True)
     return [p for _, p in scored]
+
+
+def assign_ux_scores(policies: List[Policy]) -> List[Policy]:
+    """
+    하이브리드 점수를 0~100 사이 UX 점수로 정규화하여 policy.ux_score에 저장.
+    """
+    if not policies:
+        return policies
+
+    hybrids = [getattr(p, "hybrid_score", 0.0) for p in policies]
+    min_s = min(hybrids)
+    max_s = max(hybrids)
+
+    def normalize(x: float) -> int:
+        if max_s == min_s:
+            return 100
+        return round((x - min_s) / (max_s - min_s) * 100)
+
+    for policy, h in zip(policies, hybrids):
+        policy.ux_score = normalize(h)
+    return policies
 
 
 def select_top3_with_reasons(

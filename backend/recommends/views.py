@@ -10,8 +10,10 @@ from .engine import (
     fetch_policies_by_ids,
     search_with_chroma,
     rerank_with_profile,
+    assign_ux_scores,
     select_top3_with_reasons,
 )
+from .models import RecommendationLog
 
 
 def _filter_policies_by_profile(qs, profile: Profile):
@@ -34,6 +36,21 @@ def _filter_policies_by_profile(qs, profile: Profile):
     if profile.major:
         qs = qs.filter(major__contains=[profile.major])
     return qs
+
+
+def _profile_snapshot(profile: Profile) -> dict:
+    """
+    추천 로그 저장 시 프로필 주요 필드만 남겨둔다.
+    """
+    if not profile:
+        return {}
+    return {
+        "age": profile.age,
+        "region": profile.region,
+        "employment_status": profile.employment_status,
+        "major": profile.major,
+        "special_targets": profile.special_targets,
+    }
 
 
 @api_view(["GET"])
@@ -68,11 +85,24 @@ def recommend_detail(request):
     policy_ids, scores = search_with_chroma(query_text=query, profile=profile, top_k=10)
     policies = fetch_policies_by_ids(policy_ids)
     reranked = rerank_with_profile(policies, scores, profile)
+    reranked = assign_ux_scores(reranked)
     dist_map = {pid: dist for pid, dist in zip(policy_ids, scores)}
     serializer = PolicyBasicSerializer(reranked, many=True)
     ordered_distances = [dist_map.get(p.id) for p in reranked]
 
     top3 = select_top3_with_reasons(reranked[:10], profile, query)
+
+    # 추천 로그 저장 (에러는 사용자 응답에 영향 주지 않음)
+    try:
+        RecommendationLog.objects.create(
+            user=request.user,
+            query=query,
+            profile_snapshot=_profile_snapshot(profile),
+            recommended_policy_ids=[p.id for p in reranked],
+            ux_scores={str(p.id): getattr(p, "ux_score", None) for p in reranked},
+        )
+    except Exception:
+        pass
 
     return Response(
         {

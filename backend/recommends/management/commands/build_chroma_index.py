@@ -1,5 +1,6 @@
 import chromadb
 from django.core.management.base import BaseCommand
+import hashlib
 
 from recommends.engine import (
     CHROMA_DIR,
@@ -20,7 +21,7 @@ def _meta_value(val):
     if isinstance(val, (str, int, float, bool)):
         return val
     if isinstance(val, list):
-        return [str(v) for v in val]
+        return ",".join([str(v) for v in val])
     return str(val)
 
 
@@ -49,6 +50,16 @@ class Command(BaseCommand):
                 COLLECTION_NAME, metadata={"hnsw:space": "cosine"}
             )
 
+        # 기존 메타데이터의 content_hash를 가져와 변경 여부 판단
+        existing_hash = {}
+        try:
+            existing = collection.get(include=["metadatas", "ids"])
+            for pid, meta in zip(existing.get("ids", []), existing.get("metadatas", [])):
+                if meta and "content_hash" in meta:
+                    existing_hash[str(pid)] = meta["content_hash"]
+        except Exception:
+            existing_hash = {}
+
         qs = Policy.objects.filter(status="ACTIVE").order_by("id")
         total = qs.count()
         if total == 0:
@@ -66,21 +77,29 @@ class Command(BaseCommand):
                 text = build_embedding_text(p)
                 if not text:
                     continue
-                ids.append(str(p.id))
+                pid_str = str(p.id)
+                content_hash = hashlib.md5(text.encode("utf-8")).hexdigest()
+
+                # 기존과 동일한 콘텐츠면 스킵
+                if existing_hash.get(pid_str) == content_hash:
+                    continue
+
+                ids.append(pid_str)
                 docs.append(text)
-                metadatas.append(
-                    {
-                        "policy_type": _meta_value(p.policy_type),
-                        "region_scope": _meta_value(p.region_scope),
-                        "region_sido": _meta_value(p.region_sido),
-                        "min_age": _meta_value(p.min_age),
-                        "max_age": _meta_value(p.max_age),
-                        "employment": _meta_value(p.employment),
-                        "education": _meta_value(p.education),
-                        "major": _meta_value(p.major),
-                        "special_target": _meta_value(p.special_target),
-                    }
-                )
+                meta_raw = {
+                    "policy_type": _meta_value(p.policy_type),
+                    "region_scope": _meta_value(p.region_scope),
+                    "region_sido": _meta_value(p.region_sido),
+                    "min_age": _meta_value(p.min_age),
+                    "max_age": _meta_value(p.max_age),
+                    "employment": _meta_value(p.employment),
+                    "education": _meta_value(p.education),
+                    "major": _meta_value(p.major),
+                    "special_target": _meta_value(p.special_target),
+                    "content_hash": content_hash,
+                }
+                # Chroma는 None을 허용하지 않으므로 제외
+                metadatas.append({k: v for k, v in meta_raw.items() if v is not None})
 
             if not ids:
                 continue

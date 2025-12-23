@@ -115,6 +115,10 @@ class PolicyListSerializer(serializers.ModelSerializer):
 
 
 class PolicyBasicSerializer(serializers.ModelSerializer):
+    ux_score = serializers.IntegerField(read_only=True, default=None)
+    profile_score = serializers.FloatField(read_only=True, default=None)
+    query_similarity = serializers.FloatField(read_only=True, default=None)
+
     class Meta:
         model = Policy
         fields = [
@@ -126,6 +130,9 @@ class PolicyBasicSerializer(serializers.ModelSerializer):
             "region_sigungu",
             "end_date",
             "status",
+            "ux_score",
+            "profile_score",
+            "query_similarity",
         ]
 
 
