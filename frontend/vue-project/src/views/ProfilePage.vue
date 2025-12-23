@@ -2,7 +2,7 @@
   <div class="min-h-screen">
     <div class="max-w-[900px] mx-auto px-8 lg:px-12 py-12">
       <div class="mb-12 text-center">
-        <h1 class="text-blue-900 mb-3 text-4xl">마이 프로필</h1>
+        <h1 class="text-blue-900 mb-3 text-4xl">마이 페이지</h1>
         <p class="text-gray-600 text-lg">
           프로필을 채우면 맞춤 정책 추천과 안내를 받을 수 있어요.
         </p>
@@ -18,7 +18,7 @@
             <div>
               <span class="text-gray-700 text-lg block">프로필 완성도</span>
               <span :class="[userStore.isProfileComplete ? 'text-green-600' : 'text-blue-600', 'text-sm']">
-                {{ userStore.isProfileComplete ? '모든 필수 항목을 입력했어요.' : '필수 정보를 입력해 주세요.' }}
+                {{ userStore.isProfileComplete ? '모든 필수 항목을 입력했어요!' : '필수 정보를 입력해 주세요.' }}
               </span>
             </div>
           </div>
@@ -31,6 +31,8 @@
             :class="[
               'h-4 rounded-full transition-all',
               userStore.isProfileComplete ? 'bg-gradient-to-r from-green-500 to-green-600' : 'bg-gradient-to-r from-blue-500 to-cyan-500'
+              ,
+              completionPercentage === 100 ? 'completion-animate' : ''
             ]"
             :style="{ width: completionPercentage + '%' }"
           />
@@ -38,184 +40,10 @@
       </div>
 
       <!-- Profile Form -->
-      <form @submit.prevent="handleSubmit" class="bg-white rounded-2xl shadow-lg p-10 border border-blue-100 space-y-10">
-        <div class="grid md:grid-cols-2 gap-8">
-          <!-- Age -->
-          <div>
-            <label class="block text-gray-700 mb-3 text-lg">
-              나이 <span class="text-red-500">*</span>
-            </label>
-            <input
-              type="number"
-              v-model="formData.age"
-              class="w-full px-5 py-4 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-lg"
-              placeholder="25"
-              min="18"
-              max="99"
-              required
-            />
-          </div>
-
-          <!-- Region -->
-          <div>
-            <label class="block text-gray-700 mb-3 text-lg">
-              거주 지역 <span class="text-red-500">*</span>
-            </label>
-            <select
-              v-model="formData.region"
-              class="w-full px-5 py-4 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-lg"
-              required
-            >
-              <option value="">선택해 주세요</option>
-              <option v-for="region in regionOptions" :key="region" :value="region">{{ region }}</option>
-            </select>
-          </div>
-        </div>
-
-        <div class="grid md:grid-cols-2 gap-8">
-          <div>
-            <label class="block text-gray-700 mb-3 text-lg">
-              성별
-            </label>
-            <select
-              v-model="formData.gender"
-              class="w-full px-5 py-4 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-lg"
-            >
-              <option value="">선택해 주세요</option>
-              <option value="male">남성</option>
-              <option value="female">여성</option>
-              <option value="other">기타/응답안함</option>
-            </select>
-          </div>
-          <div>
-            <label class="block text-gray-700 mb-3 text-lg">
-              월 소득(원) <span class="text-gray-500 text-sm">(선택)</span>
-            </label>
-            <input
-              type="number"
-              v-model="formData.householdIncome"
-              class="w-full px-5 py-4 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-lg"
-              placeholder="예) 3500000"
-              min="0"
-            />
-            <p class="text-sm text-gray-500 mt-2">모르면 비워두세요.</p>
-          </div>
-        </div>
-
-        <div class="grid md:grid-cols-2 gap-8">
-          <div>
-            <label class="block text-gray-700 mb-3 text-lg">
-              가구원 수 <span class="text-gray-500 text-sm">(선택)</span>
-            </label>
-            <input
-              type="number"
-              v-model="formData.familySize"
-              class="w-full px-5 py-4 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-lg"
-              placeholder="예) 4"
-              min="1"
-              max="10"
-            />
-            <p class="text-sm text-gray-500 mt-2">
-              입력한 값으로 소득분위가 자동 계산됩니다. {{ formData.incomeQuintile ? `(현재: ${formData.incomeQuintile})` : '' }}
-            </p>
-          </div>
-
-          <div>
-            <label class="block text-gray-700 mb-3 text-lg">
-              소득분위 (자동 계산)
-            </label>
-            <input
-              type="text"
-              :value="formData.incomeQuintile || '소득 / 가구원 수를 입력하면 계산됩니다'"
-              class="w-full px-5 py-4 border-2 border-gray-200 rounded-xl bg-gray-50 text-gray-600"
-              readonly
-            />
-          </div>
-        </div>
-
-        <div class="grid md:grid-cols-2 gap-8">
-          <div>
-            <label class="block text-gray-700 mb-3 text-lg">
-              취업 상태
-            </label>
-            <select
-              v-model="formData.employmentStatus"
-              class="w-full px-5 py-4 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-lg"
-            >
-              <option value="">선택해 주세요</option>
-              <option v-for="opt in employmentOptions" :key="opt.value" :value="opt.value">
-                {{ opt.label }}
-              </option>
-            </select>
-          </div>
-          <div>
-            <label class="block text-gray-700 mb-3 text-lg">
-              학력
-            </label>
-            <select
-              v-model="formData.educationLevel"
-              class="w-full px-5 py-4 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-lg"
-            >
-              <option value="">선택해 주세요</option>
-              <option v-for="opt in educationOptions" :key="opt.value" :value="opt.value">
-                {{ opt.label }}
-              </option>
-            </select>
-          </div>
-        </div>
-
-        <div class="grid md:grid-cols-2 gap-8">
-          <div>
-            <label class="block text-gray-700 mb-3 text-lg">
-              전공
-            </label>
-            <input
-              type="text"
-              v-model="formData.major"
-              class="w-full px-5 py-4 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-lg"
-              placeholder="예) 컴퓨터공학"
-            />
-          </div>
-        </div>
-
-        <!-- Special targets -->
-        <div class="p-8 bg-gradient-to-br from-blue-50 to-cyan-50 rounded-2xl border border-blue-100">
-          <label class="block text-gray-700 mb-4 text-lg">
-            지원대상 (중복 선택 가능)
-          </label>
-          <div class="flex flex-wrap gap-3">
-            <button
-              type="button"
-              @click="clearSpecialTargets"
-              :class="[
-                'px-4 py-2 rounded-xl transition-all text-base',
-                formData.specialTargets.length === 0
-                  ? 'bg-blue-500 text-white shadow-md scale-105'
-                  : 'bg-white text-gray-700 hover:bg-gray-50 border-2 border-gray-200'
-              ]"
-            >
-              해당 없음
-            </button>
-            <button
-              v-for="target in specialTargetOptions"
-              :key="target"
-              type="button"
-              @click="toggleSpecialTarget(target)"
-              :class="[
-                'px-4 py-2 rounded-xl transition-all text-base',
-                formData.specialTargets.includes(target)
-                  ? 'bg-blue-500 text-white shadow-md scale-105'
-                  : 'bg-white text-gray-700 hover:bg-gray-50 border-2 border-gray-200'
-              ]"
-            >
-              {{ target }}
-            </button>
-          </div>
-        </div>
-
+      <form @submit.prevent="handleSubmit" class="bg-white rounded-2xl shadow-lg p-10 border border-blue-100 space-y-3">
         <!-- Interests -->
         <div class="p-8 bg-gradient-to-br from-blue-50 to-cyan-50 rounded-2xl border border-blue-100">
-          <label class="block text-gray-700 mb-4 text-lg">
+          <label class="block text-gray-700 mb-3 text-lg">
             관심 분야 <span class="text-red-500">*</span>
             <span class="text-gray-500 ml-3">(중복 선택 가능)</span>
           </label>
@@ -238,8 +66,176 @@
           <p v-if="formData.interests.length === 0" class="text-red-500 mt-3 text-sm">최소 1개 이상 선택해 주세요.</p>
         </div>
 
+        <!-- Special targets -->
+        <div class="p-8 bg-gradient-to-br from-blue-50 to-cyan-50 rounded-2xl border border-blue-100">
+          <label class="block text-gray-700 mb-3 text-lg">
+            지원대상 <span class="text-red-500">*</span>
+            <span class="text-gray-500 ml-3">(중복 선택 가능)</span>
+          </label>
+          <div class="flex flex-wrap gap-4">
+            <button
+              type="button"
+              @click="clearSpecialTargets"
+              :class="[
+                'px-6 py-3 rounded-xl transition-all text-lg',
+                formData.specialTargets.includes(noneSpecialTarget)
+                  ? 'bg-blue-500 text-white shadow-md scale-105'
+                  : 'bg-white text-gray-700 hover:bg-gray-50 border-2 border-gray-200'
+              ]"
+            >
+              해당 없음
+            </button>
+            <button
+              v-for="target in specialTargetOptions"
+              :key="target"
+              type="button"
+              @click="toggleSpecialTarget(target)"
+              :class="[
+                'px-6 py-3 rounded-xl transition-all text-lg',
+                formData.specialTargets.includes(target)
+                  ? 'bg-blue-500 text-white shadow-md scale-105'
+                  : 'bg-white text-gray-700 hover:bg-gray-50 border-2 border-gray-200'
+              ]"
+            >
+              {{ target }}
+            </button>
+          </div>
+          <p v-if="formData.specialTargets.length === 0" class="text-red-500 mt-3 text-sm">최소 1개 이상 선택해 주세요.</p>
+        </div>
+
+        <div class="grid md:grid-cols-2 gap-x-8 gap-y-0 field-grid">
+          <!-- Age -->
+          <div>
+            <label class="block text-gray-700 text-lg field-label">
+              나이 <span class="text-red-500">*</span>
+            </label>
+            <input
+              type="number"
+              v-model="formData.age"
+              class="w-full px-5 py-4 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-lg"
+              placeholder="25"
+              min="18"
+              max="99"
+              required
+            />
+          </div>
+
+          <!-- Region -->
+          <div>
+            <label class="block text-gray-700 text-lg field-label">
+              거주 지역 <span class="text-red-500">*</span>
+            </label>
+            <select
+              v-model="formData.region"
+              class="w-full px-5 py-4 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-lg"
+              required
+            >
+              <option value="">선택해 주세요</option>
+              <option v-for="region in regionOptions" :key="region" :value="region">{{ region }}</option>
+            </select>
+          </div>
+
+          <div>
+            <label class="block text-gray-700 text-lg field-label">
+              성별 <span class="text-red-500">*</span>
+            </label>
+            <select
+              v-model="formData.gender"
+              class="w-full px-5 py-4 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-lg"
+              required
+            >
+              <option value="">선택해 주세요</option>
+              <option value="male">남성</option>
+              <option value="female">여성</option>
+              <option value="other">기타/응답안함</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-gray-700 text-lg field-label">
+              취업 상태 <span class="text-red-500">*</span>
+            </label>
+            <select
+              v-model="formData.employmentStatus"
+              class="w-full px-5 py-4 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-lg"
+              required
+            >
+              <option value="">선택해 주세요</option>
+              <option v-for="opt in employmentOptions" :key="opt.value" :value="opt.value">
+                {{ opt.label }}
+              </option>
+            </select>
+          </div>
+
+          <div>
+            <label class="block text-gray-700 text-lg field-label">
+              학력 <span class="text-red-500">*</span>
+            </label>
+            <select
+              v-model="formData.educationLevel"
+              class="w-full px-5 py-4 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-lg"
+              required
+            >
+              <option value="">선택해 주세요</option>
+              <option v-for="opt in educationOptions" :key="opt.value" :value="opt.value">
+                {{ opt.label }}
+              </option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-gray-700 text-lg field-label">
+              전공 <span class="text-red-500">*</span>
+            </label>
+            <input
+              type="text"
+              v-model="formData.major"
+              class="w-full px-5 py-4 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-lg"
+              placeholder="예) 컴퓨터공학"
+              required
+            />
+          </div>
+
+          <div>
+            <label class="block text-gray-700 text-lg field-label">
+              월 소득(만 원) <span class="text-gray-500 text-sm">(선택)</span>
+            </label>
+            <input
+              type="number"
+              v-model="formData.householdIncome"
+              class="w-full px-5 py-4 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-lg"
+              placeholder="예) 3500000 (모르면 비워두시면 됩니다.)"
+              min="0"
+            />
+          </div>
+          <div>
+            <label class="block text-gray-700 text-lg field-label">
+              가구원 수 <span class="text-gray-500 text-sm">(선택)</span>
+            </label>
+            <input
+              type="number"
+              v-model="formData.familySize"
+              class="w-full px-5 py-4 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-lg"
+              placeholder="예) 4"
+              min="1"
+              max="10"
+            />
+          </div>
+
+          <div class="md:col-span-2">
+            <label class="block text-gray-700 text-lg field-label">
+              소득분위 (자동 계산)
+              <span class="text-gray-500 text-sm ml-2">입력한 값으로 소득분위가 자동 계산 됩니다.</span>
+            </label>
+            <input
+              type="text"
+              :value="formData.incomeQuintile || '소득/가구원 수를 입력하면 계산됩니다.'"
+              class="w-full px-5 py-4 border-2 border-gray-200 rounded-xl bg-gray-50 text-gray-600"
+              readonly
+            />
+          </div>
+        </div>
+
         <!-- Submit Button -->
-        <div class="flex gap-6">
+        <div class="flex gap-6 mt-6">
           <button
             type="submit"
             class="flex-1 bg-gradient-to-r from-blue-500 to-cyan-500 text-white px-10 py-5 rounded-2xl hover:shadow-2xl transition-all flex items-center justify-center gap-3 text-lg shadow-lg"
@@ -278,6 +274,7 @@ import { User, Save, CheckCircle2 } from 'lucide-vue-next';
 import { useUserStore } from '../stores/userStore';
 
 const userStore = useUserStore();
+const noneSpecialTarget = 'none';
 
 const cloneProfile = (profile) => {
   const base = {
@@ -335,7 +332,7 @@ watch(
 );
 
 const completionPercentage = computed(() => {
-  const requiredFields = ['age', 'region', 'interests', 'gender', 'employmentStatus', 'educationLevel'];
+  const requiredFields = ['age', 'region', 'interests', 'gender', 'employmentStatus', 'educationLevel', 'major', 'specialTargets'];
   const total = requiredFields.length;
   const filled = requiredFields.filter((k) => {
     const val = formData.value[k];
@@ -359,12 +356,17 @@ const toggleSpecialTarget = (target) => {
   if (index > -1) {
     formData.value.specialTargets.splice(index, 1);
   } else {
+    formData.value.specialTargets = formData.value.specialTargets.filter((item) => item !== noneSpecialTarget);
     formData.value.specialTargets.push(target);
   }
 };
 
 const clearSpecialTargets = () => {
-  formData.value.specialTargets = [];
+  if (formData.value.specialTargets.includes(noneSpecialTarget)) {
+    formData.value.specialTargets = [];
+    return;
+  }
+  formData.value.specialTargets = [noneSpecialTarget];
 };
 
 const handleSubmit = async () => {
@@ -388,5 +390,43 @@ const handleSubmit = async () => {
 <style scoped>
 :global(body) {
   background: #f5fbf1;
+}
+
+.field-grid {
+  row-gap: 0.75rem;
+}
+
+.field-label {
+  margin-bottom: 0.75rem;
+}
+
+.completion-animate {
+  animation: completionFill 900ms ease-out 1, completionPulseBig 900ms ease-out 1;
+  animation-delay: 0ms, 900ms;
+  transform-origin: center;
+}
+
+@keyframes completionFill {
+  0% {
+    width: 0%;
+  }
+  100% {
+    width: 100%;
+  }
+}
+
+@keyframes completionPulseBig {
+  0% {
+    box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.6);
+    transform: scaleY(1);
+  }
+  60% {
+    box-shadow: 0 0 0 14px rgba(34, 197, 94, 0);
+    transform: scaleY(1.14);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(34, 197, 94, 0);
+    transform: scaleY(1);
+  }
 }
 </style>
