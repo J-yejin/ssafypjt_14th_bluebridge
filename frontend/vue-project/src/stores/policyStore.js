@@ -120,10 +120,10 @@ const transformPolicy = (p) => {
   const regionBuckets = mapRegionsToBuckets(p.applicable_regions, region);
 
   const eligibilitySections = [
-    { label: '취업상황 ', values: p.employment_requirements || p.employment || [] },
-    { label: '학력 ', values: p.education_requirements || p.education || [] },
-    { label: '전공 ', values: p.major_requirements || p.major || [] },
-    { label: '지원대상 ', values: p.special_target || [] },
+    { label: '취업·직업', values: p.employment_requirements || p.employment || [] },
+    { label: '학력', values: p.education_requirements || p.education || [] },
+    { label: '전공', values: p.major_requirements || p.major || [] },
+    { label: '지원대상', values: p.special_target || [] },
   ];
 
   const eligibility = eligibilitySections.flatMap((section) => {
@@ -139,7 +139,7 @@ const transformPolicy = (p) => {
     organization: p.provider || '',
     description: p.summary || '',
     eligibility,
-    benefits: p.apply_method || '',
+    benefits: p.policy_detail || p.apply_method || '',
     applicationPeriod: toPeriod(p.start_date, p.end_date),
     ageRange: toAgeRange(p.min_age, p.max_age),
     region: regionBuckets[0],
@@ -148,6 +148,7 @@ const transformPolicy = (p) => {
     employmentStatus: p.employment_requirements || [],
     tags: cleanList([
       category,
+      ...(Array.isArray(p.target_detail) ? p.target_detail.filter((v) => v && v !== '/') : []),
     ]),
     detailLink: p.detail_link || '',
     raw: p,
