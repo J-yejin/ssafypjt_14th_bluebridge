@@ -208,7 +208,7 @@ const featureCards = [
 
 <style scoped>
 :global(body) {
-  background: #f6f8fb;
+  background: #f5fbf1;
   color: #0f172a;
   font-family: 'Pretendard', 'Inter', 'Noto Sans KR', system-ui, -apple-system, sans-serif;
 }
@@ -246,7 +246,7 @@ const featureCards = [
 
 .hero-left {
   padding: 32px;
-  background: linear-gradient(135deg, #1d6bff 0%, #5aa6ff 100%);
+  background: linear-gradient(135deg, #c5f5b1 0%, #7fcf92 100%);
   color: #fff;
   text-align: center;
 }
@@ -269,11 +269,11 @@ const featureCards = [
   font-weight: 700;
   letter-spacing: 0.08em;
   text-transform: uppercase;
-  color: #60a5fa;
+  color: #66c08c;
 }
 
 .hero-left .eyebrow {
-  color: #cbe2ff;
+  color: #d7f4df;
 }
 
 .actions {
@@ -293,15 +293,15 @@ const featureCards = [
 }
 
 .btn.primary {
-  background: #0f60ff;
+  background: linear-gradient(135deg, #24b47e 0%, #3b82f6 100%);
   color: #fff;
-  box-shadow: 0 10px 25px rgba(15, 96, 255, 0.35);
+  box-shadow: 0 10px 25px rgba(36, 180, 126, 0.32);
 }
 
 .btn.ghost {
-  background: #e8f1ff;
-  color: #0f60ff;
-  border: 1px solid #c5dafc;
+  background: #ecf6e8;
+  color: #3b8f5a;
+  border: 1px solid #c9e7c9;
 }
 
 .btn.small {
@@ -338,8 +338,8 @@ const featureCards = [
 }
 
 .pill {
-  background: #f0f5ff;
-  color: #1d4ed8;
+  background: #ecf7e9;
+  color: #2f7c46;
   padding: 10px 12px;
   border-radius: 12px;
   text-align: center;
@@ -410,7 +410,7 @@ const featureCards = [
 }
 
 .feature.mint {
-  background: linear-gradient(135deg, #e8fff7 0%, #d8f7ec 100%);
+  background: linear-gradient(135deg, #f7fbff 0%, #e4f2ff 100%);
 }
 .feature.sand {
   background: linear-gradient(135deg, #fff7e6 0%, #ffe9c7 100%);
@@ -445,7 +445,7 @@ const featureCards = [
 }
 
 .partner-tile {
-  background: #f8fafc;
+  background: #f3fbf5;
   border-radius: 14px;
   padding: 16px 12px;
   display: grid;
@@ -467,7 +467,7 @@ const featureCards = [
   background: #def8ef;
 }
 .bubble.blue {
-  background: #d9e8ff;
+  background: #d9f1df;
 }
 .bubble.sand {
   background: #ffeecd;
@@ -504,7 +504,7 @@ const featureCards = [
 
 .list-header a {
   font-size: 13px;
-  color: #2563eb;
+  color: #3f8c4f;
   text-decoration: none;
 }
 
@@ -524,8 +524,8 @@ const featureCards = [
 }
 
 .tag {
-  background: #e5edff;
-  color: #1d4ed8;
+  background: #e2f3e6;
+  color: #2f7c46;
   padding: 4px 8px;
   border-radius: 8px;
   font-weight: 700;

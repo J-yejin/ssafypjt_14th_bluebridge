@@ -189,3 +189,13 @@
 html {
   font-size: var(--font-size);
 }
+
+.accent-button {
+  background: linear-gradient(135deg, #9fdcff 0%, #55bfff 100%);
+  box-shadow: 0 12px 28px rgba(85, 191, 255, 0.35);
+}
+
+.accent-button:hover {
+  filter: brightness(1.02);
+  box-shadow: 0 14px 32px rgba(85, 191, 255, 0.4);
+}

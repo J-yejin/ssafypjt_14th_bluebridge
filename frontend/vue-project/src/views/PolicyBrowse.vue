@@ -151,20 +151,38 @@ const showFilters = ref(false);
 
 const categories = [
   { label: '전체', value: '' },
-  { label: '창업', value: '창업' },
-  { label: '주거', value: '주거' },
+  { label: '일자리', value: '일자리' },
   { label: '교육', value: '교육' },
-  { label: '취업', value: '취업' },
-  { label: '문화', value: '문화' },
+  { label: '복지문화', value: '복지문화' },
   { label: '건강', value: '건강' },
-  { label: '지역', value: '지역' },
+  { label: '생활지원', value: '생활지원' },
+  { label: '재무/법률', value: '재무/법률' },
+  { label: '위기·안전', value: '위기·안전' },
+  { label: '가족/권리', value: '가족/권리' },
+  { label: '기타', value: '기타' },
 ];
 
 const regions = [
   { label: '전체', value: '' },
   { label: '전국', value: '전국' },
-  { label: '수도권', value: '수도권' },
-  { label: '비수도권', value: '비수도권' },
+  { label: '서울특별시', value: '서울특별시' },
+  { label: '부산광역시', value: '부산광역시' },
+  { label: '대구광역시', value: '대구광역시' },
+  { label: '인천광역시', value: '인천광역시' },
+  { label: '광주광역시', value: '광주광역시' },
+  { label: '대전광역시', value: '대전광역시' },
+  { label: '울산광역시', value: '울산광역시' },
+  { label: '세종특별자치시', value: '세종특별자치시' },
+  { label: '경기도', value: '경기도' },
+  { label: '강원특별자치도', value: '강원특별자치도' },
+  { label: '충청북도', value: '충청북도' },
+  { label: '충청남도', value: '충청남도' },
+  { label: '전라북도', value: '전라북도' },
+  { label: '전라남도', value: '전라남도' },
+  { label: '경상북도', value: '경상북도' },
+  { label: '경상남도', value: '경상남도' },
+  { label: '제주특별자치도', value: '제주특별자치도' },
+  { label: '기타', value: '기타' },
 ];
 
 onMounted(() => {
@@ -184,8 +202,7 @@ const filteredAndSortedPolicies = computed(() => {
     const matchesCategory = selectedCategory.value === '' || policy.category === selectedCategory.value;
     const matchesRegion =
       selectedRegion.value === '' ||
-      policy.region === selectedRegion.value ||
-      (selectedRegion.value === '전국' && policy.region === '전국');
+      (policy.regionBuckets || [policy.regionBucket]).includes(selectedRegion.value);
 
     return matchesSearch && matchesCategory && matchesRegion;
   });

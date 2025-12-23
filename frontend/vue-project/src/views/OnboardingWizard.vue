@@ -301,15 +301,15 @@ onMounted(async () => {
 }
 
 .option-button--active {
-  border-color: #3b82f6;
-  background: linear-gradient(135deg, #e0efff 0%, #f4f8ff 100%);
-  color: #1d4ed8;
-  box-shadow: 0 8px 20px rgba(59, 130, 246, 0.15);
+  border-color: #59a760;
+  background: linear-gradient(135deg, #e6f7e5 0%, #d7f2d6 100%);
+  color: #2f7c46;
+  box-shadow: 0 8px 20px rgba(89, 167, 96, 0.18);
 }
 
 .option-button:hover {
-  border-color: #bfdbfe;
-  background: #f8fbff;
+  border-color: #cde9d2;
+  background: #f5fbf5;
 }
 
 .option-button + .option-button {
@@ -327,8 +327,8 @@ onMounted(async () => {
 
 .input-field:focus {
   outline: none;
-  border-color: #3b82f6;
-  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
+  border-color: #59a760;
+  box-shadow: 0 0 0 3px rgba(89, 167, 96, 0.2);
 }
 
 .nav-button {
@@ -345,9 +345,9 @@ onMounted(async () => {
 }
 
 .nav-button--primary {
-  background: linear-gradient(135deg, #0ea5e9 0%, #3b82f6 100%);
-  color: #fff;
-  box-shadow: 0 10px 25px rgba(14, 165, 233, 0.25);
+  background: linear-gradient(135deg, #9fdcff 0%, #5cbcff 100%);
+  color: #0b2f4a;
+  box-shadow: 0 10px 25px rgba(92, 188, 255, 0.25);
 }
 
 .nav-button:disabled {

@@ -387,6 +387,6 @@ const handleSubmit = async () => {
 
 <style scoped>
 :global(body) {
-  background: #f6f8fb;
+  background: #f5fbf1;
 }
 </style>

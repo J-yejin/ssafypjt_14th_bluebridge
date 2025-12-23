@@ -58,7 +58,9 @@
               </div>
               <div>
                 <p class="text-gray-500 mb-1">연령</p>
-                <p class="text-gray-900 text-lg">{{ policy.ageRange }}세</p>
+                <p class="text-gray-900 text-lg">
+                  {{ policy.ageRange === '제한없음' ? '제한없음' : `${policy.ageRange}세` }}
+                </p>
               </div>
             </div>
           </div>
@@ -72,14 +74,14 @@
           <!-- Eligibility -->
           <section class="mb-12">
             <h2 class="text-blue-900 mb-6 text-3xl border-l-4 border-blue-500 pl-6">신청 자격</h2>
-            <div class="space-y-4 pl-6">
+            <div class="pl-6 grid md:grid-cols-2 gap-4">
               <div
                 v-for="(item, index) in policy.eligibility"
                 :key="index"
-                class="flex items-start gap-4 bg-gray-50 p-5 rounded-xl"
+                class="flex items-start gap-3 bg-gray-50 p-4 rounded-xl"
               >
-                <CheckCircle2 :size="24" class="text-green-600 mt-0.5 flex-shrink-0" />
-                <p class="text-gray-700 text-lg">{{ item }}</p>
+                <CheckCircle2 :size="22" class="text-green-600 mt-0.5 flex-shrink-0" />
+                <p class="text-gray-700 text-lg leading-snug">{{ item }}</p>
               </div>
             </div>
           </section>
@@ -97,11 +99,10 @@
             <h2 class="text-blue-900 mb-6 text-3xl border-l-4 border-blue-500 pl-6">관련 키워드</h2>
             <div class="flex flex-wrap gap-3 pl-6">
               <span
-                v-for="tag in policy.tags"
-                :key="tag"
+                v-if="policy.category"
                 class="px-5 py-2.5 bg-blue-100 text-blue-700 rounded-xl text-lg hover:bg-blue-200 transition-colors cursor-pointer"
               >
-                #{{ tag }}
+                #{{ policy.category }}
               </span>
             </div>
           </section>
