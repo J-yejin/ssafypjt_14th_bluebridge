@@ -2,7 +2,7 @@
   <div class="min-h-screen">
     <div class="max-w-[900px] mx-auto px-8 lg:px-12 py-12">
       <div class="mb-12 text-center">
-        <h1 class="text-blue-900 mb-3 text-4xl">마이 페이지</h1>
+        <h1 class="text-blue-900 mb-3 text-4xl">&#45208;&#51032; &#54532;&#47196;&#54596;</h1>
         <p class="text-gray-600 text-lg">
           프로필을 채우면 맞춤 정책 추천과 안내를 받을 수 있어요.
         </p>
