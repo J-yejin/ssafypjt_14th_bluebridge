@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <div class="min-h-screen">
     <div class="max-w-[1200px] mx-auto px-8 lg:px-12 py-12">
       <router-link
@@ -27,11 +27,11 @@
           <div class="absolute bottom-0 left-0 w-80 h-80 bg-white/10 rounded-full -ml-40 -mb-40" />
           <button
             type="button"
-            class="absolute bottom-0 right-0 z-20 p-1 hover:scale-105 transition-transform"
+            class="absolute bottom-0 right-0 z-20 h-12 w-12 rounded-full bg-white shadow-lg flex items-center justify-center hover:scale-105 transition-transform"
             :aria-pressed="isWishlisted"
             @click="handleWishlistToggle"
             title="관심 정책"
-            style="transform: translate(-18px, -8px);"
+            style="transform: translate(-26px, -22px);"
           >
             <Heart
               :size="26"
@@ -73,7 +73,7 @@
               <div>
                 <p class="text-gray-500 mb-1">연령</p>
                 <p class="text-gray-900 text-lg">
-                  {{ policy.ageRange === '제한없음' ? '제한없음' : `${policy.ageRange}세` }}
+                  {{ policy.ageRange === '제한없음' ? '제한없음' : policy.ageRange + '세' }}
                 </p>
               </div>
             </div>
@@ -81,7 +81,7 @@
 
           <!-- Description -->
           <section class="mb-12">
-            <h2 class="text-blue-900 mb-6 text-3xl border-l-4 border-blue-500 pl-6">정책 소개</h2>
+            <h2 class="text-blue-900 mb-6 text-3xl border-l-4 border-blue-500 pl-6">정책 설명</h2>
             <div class="pl-6">
               <div class="bg-gradient-to-br from-blue-50 via-cyan-50 to-blue-50 rounded-2xl p-6 md:p-8 border-2 border-blue-200 shadow-inner">
                 <pre class="text-gray-700 leading-relaxed text-base md:text-lg whitespace-pre-wrap break-words overflow-auto w-full max-w-full">
@@ -93,7 +93,7 @@
 
           <!-- Eligibility -->
           <section class="mb-12">
-            <h2 class="text-blue-900 mb-6 text-3xl border-l-4 border-blue-500 pl-6">신청 자격</h2>
+            <h2 class="text-blue-900 mb-6 text-3xl border-l-4 border-blue-500 pl-6">신청 대상</h2>
             <div class="pl-6 grid md:grid-cols-2 gap-4">
               <div
                 v-for="(group, index) in groupedEligibility"
@@ -117,7 +117,7 @@
 
           <!-- Benefits -->
           <section class="mb-12">
-            <h2 class="text-blue-900 mb-6 text-3xl border-l-4 border-blue-500 pl-6">지원 내용</h2>
+            <h2 class="text-blue-900 mb-6 text-3xl border-l-4 border-blue-500 pl-6">지원 혜택</h2>
             <div class="bg-gradient-to-br from-blue-50 via-cyan-50 to-blue-50 rounded-2xl p-6 md:p-8 border-2 border-blue-200 shadow-inner">
               <pre class="block w-full text-gray-800 text-base md:text-lg leading-relaxed whitespace-pre-wrap break-words overflow-auto font-sans">
 {{ displayBenefits }}
@@ -127,7 +127,7 @@
 
           <!-- Tags -->
           <section class="mb-12">
-            <h2 class="text-blue-900 mb-6 text-3xl border-l-4 border-blue-500 pl-6">관련 키워드</h2>
+            <h2 class="text-blue-900 mb-6 text-3xl border-l-4 border-blue-500 pl-6">관련 태그</h2>
             <div class="flex flex-wrap gap-3 pl-6">
               <span
                 v-if="policy.category"
@@ -141,25 +141,25 @@
           <!-- CTA -->
           <div class="flex flex-col sm:flex-row gap-4 sm:gap-6 pt-8 border-t-2 border-gray-100">
             <a
-              :href="detailLink || undefined"
-              :target="detailLink ? '_blank' : undefined"
-              :rel="detailLink ? 'noopener noreferrer' : undefined"
-              :aria-disabled="!detailLink"
+              v-if="detailLink"
+              :href="detailLink"
+              target="_blank"
+              rel="noopener noreferrer"
               @click="handleDetailClick"
               class="flex-1 bg-gradient-to-r from-blue-500 to-cyan-500 text-white px-10 py-5 rounded-2xl hover:shadow-2xl transition-all flex items-center justify-center gap-3 text-lg shadow-lg text-center"
-              :class="{
-                'opacity-60 cursor-not-allowed hover:shadow-none pointer-events-none': !detailLink,
-                'cursor-pointer': !!detailLink,
-              }"
             >
               <ExternalLink :size="24" />
-              <span>관련 페이지로 이동</span>
+              <span>관련 사이트로 이동하기</span>
             </a>
             <button
               type="button"
-              class="px-10 py-5 border-2 border-blue-500 text-blue-600 rounded-2xl hover:bg-blue-50 transition-all text-lg cursor-pointer"
+              :class="[
+                'px-10 py-5 border-2 border-blue-500 text-blue-600 rounded-2xl hover:bg-blue-50 transition-all text-lg cursor-pointer flex items-center justify-center gap-2',
+                detailLink ? '' : 'sm:flex-1'
+              ]"
               @click="handleShare"
             >
+              <Share2 :size="22" />
               공유하기
             </button>
           </div>
@@ -172,7 +172,7 @@
 <script setup>
 import { computed, onMounted } from 'vue';
 import { useRoute } from 'vue-router';
-import { ArrowLeft, Calendar, Users, CheckCircle2, ExternalLink, Heart } from 'lucide-vue-next';
+import { ArrowLeft, Calendar, Users, CheckCircle2, ExternalLink, Heart, Share2 } from 'lucide-vue-next';
 import { usePolicyStore } from '../stores/policyStore';
 import { useAuthStore } from '../stores/authStore';
 
@@ -265,7 +265,7 @@ const handleShare = async () => {
 
     if (navigator.clipboard?.writeText) {
       await navigator.clipboard.writeText(shareUrl);
-      alert('링크를 복사했습니다.');
+      alert('링크가 복사되었습니다.');
       return;
     }
 
@@ -275,10 +275,10 @@ const handleShare = async () => {
     textarea.select();
     document.execCommand('copy');
     document.body.removeChild(textarea);
-    alert('링크를 복사했습니다.');
+    alert('링크가 복사되었습니다.');
   } catch (error) {
-    console.error('공유에 실패했습니다:', error);
-    alert('공유 중 문제가 발생했습니다.');
+    console.error('공유하기 실패했습니다:', error);
+    alert('공유 기능을 사용할 수 없습니다.');
   }
 };
 

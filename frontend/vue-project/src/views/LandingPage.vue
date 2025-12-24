@@ -21,20 +21,49 @@
       <div class="hero-right">
         <div class="card service">
           <p class="eyebrow">빠르고 안전한</p>
-          <h3>청년 정책 한눈에</h3>
+          <h3>나의 청년정책 한눈에</h3>
           <div class="service-grid">
-            <div class="pill">정책 브리핑</div>
             <div class="pill">신청 일정</div>
-            <div class="pill">즐겨찾기</div>
+            <div class="pill">나의 관심정책</div>
           </div>
         </div>
         <div class="card notice">
-          <div>
+          <div class="notice-header">
             <p class="eyebrow">알려드립니다</p>
             <h4>정책 신청 일정 사전 안내</h4>
             <p class="date">2025.03 업데이트</p>
           </div>
-          <button class="btn small" @click="goBrowse">자세히 보기</button>
+          <div class="notice-calendar" aria-label="정책 신청 일정">
+            <div class="calendar-header">
+              <span class="calendar-month">2025.03</span>
+              <span class="calendar-legend">
+                <span class="calendar-dot" aria-hidden="true"></span>
+                신청 일정
+              </span>
+            </div>
+            <div class="calendar-grid">
+              <div class="calendar-day">2</div>
+              <div class="calendar-day">3</div>
+              <div class="calendar-day">4</div>
+              <div class="calendar-day event">
+                5
+                <span class="event-label">접수</span>
+              </div>
+              <div class="calendar-day">6</div>
+              <div class="calendar-day">7</div>
+              <div class="calendar-day">8</div>
+              <div class="calendar-day">9</div>
+              <div class="calendar-day">10</div>
+              <div class="calendar-day">11</div>
+              <div class="calendar-day event">
+                12
+                <span class="event-label">마감</span>
+              </div>
+              <div class="calendar-day">13</div>
+              <div class="calendar-day">14</div>
+              <div class="calendar-day">15</div>
+            </div>
+          </div>
         </div>
       </div>
     </section>
@@ -332,7 +361,7 @@ const featureCards = [
 
 .service-grid {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 8px;
   margin: 10px 0;
 }
@@ -355,6 +384,74 @@ const featureCards = [
 .date {
   color: #64748b;
   font-size: 13px;
+}
+
+.notice-header {
+  display: grid;
+  gap: 4px;
+}
+
+.notice-calendar {
+  margin-top: 10px;
+  background: #f8fafc;
+  border-radius: 12px;
+  padding: 12px;
+  border: 1px solid #e2e8f0;
+}
+
+.calendar-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 12px;
+  font-weight: 700;
+  color: #334155;
+  margin-bottom: 8px;
+}
+
+.calendar-legend {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: #0f172a;
+}
+
+.calendar-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #34d399;
+  box-shadow: 0 0 0 3px rgba(52, 211, 153, 0.2);
+}
+
+.calendar-grid {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 6px;
+  font-size: 12px;
+  color: #475569;
+}
+
+.calendar-day {
+  min-height: 32px;
+  border-radius: 8px;
+  display: grid;
+  place-items: center;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+}
+
+.calendar-day.event {
+  border-color: #34d399;
+  background: #ecfdf5;
+  color: #047857;
+  font-weight: 700;
+}
+
+.event-label {
+  display: block;
+  font-size: 10px;
+  margin-top: 2px;
 }
 
 .features {
