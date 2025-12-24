@@ -1,71 +1,75 @@
 <template>
-  <div class="max-w-[1240px] mx-auto px-4 lg:px-8 py-10 grid grid-cols-[1fr_280px] gap-6 items-start">
-    <!-- 메인 리스트 -->
-    <section class="bg-white rounded-2xl shadow-md border border-gray-100 p-6">
-      <div class="flex items-center justify-between mb-8">
-        <div>
-          <h1 class="text-3xl font-semibold text-blue-900">정책 게시판</h1>
-          <p class="text-gray-600 mt-2">카테고리를 선택해 정책 게시글 목록을 확인하세요.</p>
+  <div class="board-page">
+    <div class="container">
+      <!-- 사이드바 -->
+      <aside class="sidebar">
+        <div class="sidebar-header">
+          <p class="eyebrow">정책 게시판</p>
+          <h2>카테고리</h2>
         </div>
-        <router-link
-          v-if="authStore.isAuthenticated"
-          to="/boards/new"
-          class="px-4 py-2.5 rounded-lg bg-gradient-to-r from-blue-500 to-cyan-500 text-white shadow-md hover:shadow-lg transition"
-        >
-          작성하기
-        </router-link>
-      </div>
+        <div class="sidebar-menu">
+          <button
+            v-for="item in categories"
+            :key="item.value"
+            class="sidebar-item"
+            :class="{ active: selectedCategory === item.value }"
+            @click="setCategory(item.value)"
+          >
+            <span>{{ item.label }}</span>
+          </button>
+          <button class="sidebar-write" @click="handleWrite">글 작성</button>
+        </div>
+      </aside>
 
-      <div class="bg-white rounded-2xl shadow-inner border border-gray-100 overflow-hidden">
-        <div class="overflow-x-auto">
-          <div class="min-w-[720px]">
-            <div v-if="boardStore.loading" class="p-8 text-center text-gray-500">불러오는 중...</div>
-            <div v-else-if="boardStore.error" class="p-8 text-center text-red-500">{{ boardStore.error }}</div>
-            <div v-else-if="filteredBoards.length === 0" class="p-8 text-center text-gray-500">게시글이 없습니다.</div>
-            <ul v-else>
-              <li
-                v-for="board in filteredBoards"
-                :key="board.id"
-                class="grid grid-cols-[80px_1fr_160px_140px] items-center px-6 py-4 border-t border-gray-100 hover:bg-blue-50 transition cursor-pointer text-sm"
-                @click="handleSelect(board.id)"
-              >
-                <span class="text-gray-500">작성 번호 : {{ board.id }}</span>
-                <div class="flex flex-col">
-                  <span class="text-base text-blue-900">제목 : {{ board.title }}</span>
-                  <span class="text-xs text-gray-500">카테고리 : {{ displayCategory(board.category) }}</span>
-                </div>
-                <span class="text-gray-600">작성자 : {{ board.user || '익명' }}</span>
-                <span class="text-right text-gray-500">작성 일시 : {{ formatDate(board.created_at) }}</span>
-              </li>
-            </ul>
+      <!-- 메인 영역 -->
+      <main class="content">
+        <div class="content-header">
+          <div>
+            <h1>정책 게시판</h1>
+            <p>총 게시물: {{ filteredBoards.length }}건</p>
+          </div>
+          <div class="actions">
+            <input
+              v-model="searchTerm"
+              type="text"
+              class="search-input"
+              placeholder="검색어를 입력하세요"
+            />
+            <router-link v-if="authStore.isAuthenticated" to="/boards/new" class="write-btn">
+              글 작성
+            </router-link>
           </div>
         </div>
-      </div>
-    </section>
 
-    <!-- 사이드바 -->
-    <aside class="bg-white rounded-2xl shadow-md border border-gray-100 p-4 lg:order-last">
-      <div class="rounded-2xl bg-gradient-to-b from-blue-500 to-cyan-500 text-white p-5 mb-4">
-        <p class="text-sm opacity-80">정책 게시판</p>
-        <h2 class="text-2xl font-bold mt-1">카테고리</h2>
-      </div>
-      <div class="space-y-2">
-        <button
-          v-for="item in categories"
-          :key="item.value"
-          @click="setCategory(item.value)"
-          :class="[
-            'w-full text-left px-4 py-3 rounded-xl border transition flex items-center justify-between',
-            selectedCategory === item.value
-              ? 'border-blue-500 bg-blue-50 text-blue-700 font-semibold'
-              : 'border-gray-200 bg-white text-gray-700 hover:bg-gray-50'
-          ]"
-        >
-          <span>{{ item.label }}</span>
-          <span v-if="selectedCategory === item.value" class="text-blue-500 text-sm">선택됨</span>
-        </button>
-      </div>
-    </aside>
+        <div class="table-wrapper">
+          <div class="table-header">
+            <span class="col-number">번호</span>
+            <span class="col-title">제목</span>
+            <span class="col-author">작성자</span>
+            <span class="col-date">작성일</span>
+          </div>
+          <div v-if="boardStore.loading" class="empty">불러오는 중...</div>
+          <div v-else-if="boardStore.error" class="empty error">{{ boardStore.error }}</div>
+          <div v-else-if="filteredBoards.length === 0" class="empty">게시글이 없습니다.</div>
+          <ul v-else class="table-rows">
+            <li
+              v-for="board in filteredBoards"
+              :key="board.id"
+              class="table-row"
+              @click="handleSelect(board.id)"
+            >
+              <span class="col-number">{{ board.id }}</span>
+              <div class="col-title">
+                <span class="title-text">{{ board.title }}</span>
+                <span class="badge">{{ displayCategory(board.category) }}</span>
+              </div>
+              <span class="col-author">{{ board.user || '익명' }}</span>
+              <span class="col-date">{{ formatDate(board.created_at) }}</span>
+            </li>
+          </ul>
+        </div>
+      </main>
+    </div>
   </div>
 </template>
 
@@ -81,6 +85,7 @@ const route = useRoute();
 const router = useRouter();
 
 const selectedCategory = ref('all');
+const searchTerm = ref('');
 
 const categories = [
   { label: '전체', value: 'all' },
@@ -114,6 +119,15 @@ const filteredBoards = computed(() => {
     }[selectedCategory.value] || [];
     list = list.filter((b) => group.some((g) => (b.category || '').toLowerCase().includes(g)));
   }
+  if (searchTerm.value.trim()) {
+    const q = searchTerm.value.toLowerCase();
+    list = list.filter(
+      (b) =>
+        (b.title || '').toLowerCase().includes(q) ||
+        (b.content || '').toLowerCase().includes(q) ||
+        (b.user || '').toLowerCase().includes(q)
+    );
+  }
   return list;
 });
 
@@ -124,6 +138,15 @@ const handleSelect = (id) => {
     return;
   }
   router.push(`/boards/${id}`);
+};
+
+const handleWrite = () => {
+  if (!authStore.isAuthenticated) {
+    alert('로그인 후 작성할 수 있습니다.');
+    router.push('/login');
+    return;
+  }
+  router.push('/boards/new');
 };
 
 const setCategory = (value) => {
@@ -150,3 +173,240 @@ watch(
   () => syncCategoryFromRoute()
 );
 </script>
+
+<style scoped>
+.board-page {
+  background: #f7f8fb;
+  min-height: 100vh;
+  padding-top: 12px;
+}
+
+.container {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 20px;
+}
+
+@media (min-width: 1024px) {
+  .container {
+    grid-template-columns: 4fr 1.2fr;
+    align-items: start;
+  }
+}
+
+.sidebar {
+  background: #fff;
+  border-radius: 18px;
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.06);
+  border: 1px solid #e5e7eb;
+  padding: 0;
+  overflow: hidden;
+  min-height: 560px;
+}
+
+.sidebar-header {
+  background: linear-gradient(135deg, #4fb184 0%, #43a5d4 100%);
+  color: #fff;
+  padding: 18px 16px 14px 16px;
+}
+
+.sidebar-header .eyebrow {
+  font-size: 12px;
+  opacity: 0.85;
+  margin: 0 0 4px 0;
+}
+
+.sidebar-header h2 {
+  margin: 0;
+  font-size: 22px;
+  font-weight: 800;
+}
+
+.sidebar-menu {
+  padding: 12px;
+  display: grid;
+  gap: 10px;
+}
+
+.sidebar-item {
+  width: 100%;
+  text-align: left;
+  padding: 14px 14px;
+  border-radius: 12px;
+  border: 1px solid #e5e7eb;
+  background: #fff;
+  color: #374151;
+  font-weight: 600;
+  transition: all 0.15s ease;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.sidebar-item:hover {
+  background: #e7f5ec;
+  border-color: #b7e0c8;
+  color: #2f855a;
+}
+
+.sidebar-item.active {
+  border: 1px solid #4fb184;
+  background: #e1f4ea;
+  color: #2f855a;
+}
+
+.sidebar-write {
+  width: 100%;
+  padding: 14px;
+  border-radius: 12px;
+  border: none;
+  background: linear-gradient(135deg, #4fb184 0%, #43a5d4 100%);
+  color: #fff;
+  font-weight: 700;
+  box-shadow: 0 10px 20px rgba(79, 177, 132, 0.25);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.sidebar-write:hover {
+  filter: brightness(1.05);
+}
+
+.content {
+  background: #fff;
+  border-radius: 18px;
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.06);
+  border: 1px solid #e5e7eb;
+  padding: 22px;
+}
+
+.content-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.content-header h1 {
+  margin: 0;
+  font-size: 26px;
+  font-weight: 800;
+}
+
+.content-header p {
+  margin: 4px 0 0 0;
+  color: #6b7280;
+}
+
+.actions {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.search-input {
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  padding: 10px 12px;
+  min-width: 200px;
+  outline: none;
+}
+
+.write-btn {
+  padding: 10px 14px;
+  border-radius: 12px;
+  background: #7c3aed;
+  color: #fff;
+  font-weight: 700;
+  box-shadow: 0 10px 20px rgba(124, 58, 237, 0.2);
+  transition: all 0.15s ease;
+}
+
+.write-btn:hover {
+  filter: brightness(1.05);
+}
+
+.table-wrapper {
+  margin-top: 12px;
+}
+
+.table-header,
+.table-row {
+  display: grid;
+  grid-template-columns: 80px 1fr 180px 140px;
+  align-items: center;
+}
+
+.table-header {
+  background: #f3f4f6;
+  padding: 12px 14px;
+  color: #374151;
+  font-weight: 700;
+  border: 1px solid #e5e7eb;
+  border-radius: 14px 14px 0 0;
+}
+
+.table-rows {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  border: 1px solid #e5e7eb;
+  border-top: none;
+  border-radius: 0 0 14px 14px;
+  overflow: hidden;
+}
+
+.table-row {
+  padding: 12px 14px;
+  border-top: 1px solid #f1f5f9;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.table-row:hover {
+  background: #f8fafc;
+}
+
+.title-text {
+  font-weight: 700;
+  color: #1f2937;
+}
+
+.badge {
+  display: inline-block;
+  background: #e1f4ea;
+  color: #2f855a;
+  padding: 4px 8px;
+  border-radius: 10px;
+  font-size: 12px;
+  font-weight: 700;
+  margin-top: 4px;
+}
+
+.empty {
+  padding: 18px;
+  text-align: center;
+  color: #6b7280;
+  border: 1px solid #e5e7eb;
+  border-radius: 14px;
+  margin-top: 10px;
+}
+
+.empty.error {
+  color: #dc2626;
+}
+
+@media (max-width: 768px) {
+  .table-header,
+  .table-row {
+    grid-template-columns: 70px 1fr;
+    row-gap: 4px;
+  }
+  .col-author,
+  .col-date {
+    display: none;
+  }
+}
+</style>
