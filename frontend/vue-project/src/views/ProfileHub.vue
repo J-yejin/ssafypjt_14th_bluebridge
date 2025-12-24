@@ -2,8 +2,8 @@
   <div class="min-h-screen">
     <div class="max-w-[1100px] mx-auto px-8 lg:px-12 py-12">
       <div class="mb-12 text-center">
-        <h1 class="text-blue-900 mb-3 text-4xl">프로필</h1>
-        <p class="text-gray-600 text-lg">마이 페이지와 나의 관심정책 중 원하는 메뉴를 선택하세요.</p>
+        <h1 class="text-blue-900 mb-3 text-4xl">마이 페이지</h1>
+        <p class="text-gray-600 text-lg">나의 프로필과 나의 관심정책 중 원하는 메뉴를 선택하세요.</p>
       </div>
 
       <div class="grid md:grid-cols-2 gap-8">
@@ -16,7 +16,7 @@
               <User :size="26" class="text-white" />
             </div>
             <div>
-              <h2 class="text-2xl text-green-900 font-semibold">마이 페이지</h2>
+              <h2 class="text-2xl text-green-900 font-semibold">나의 프로필</h2>
               <p class="text-green-700">내 정보를 확인하고 수정할 수 있어요.</p>
             </div>
           </div>
