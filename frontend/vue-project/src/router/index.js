@@ -12,6 +12,7 @@ import BoardListView from '../views/BoardListView.vue';
 import BoardDetailView from '../views/BoardDetailView.vue';
 import BoardCreateView from '../views/BoardCreateView.vue';
 import OnboardingWizard from '../views/OnboardingWizard.vue';
+import { useAuthStore } from '../stores/authStore';
 
 const routes = [
   { path: '/', name: 'home', component: LandingPage },
@@ -35,6 +36,12 @@ const router = createRouter({
   scrollBehavior() {
     return { top: 0 };
   },
+});
+
+router.beforeEach(() => {
+  const authStore = useAuthStore();
+  authStore.syncAuthState();
+  return true;
 });
 
 export default router;
