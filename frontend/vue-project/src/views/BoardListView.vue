@@ -70,13 +70,14 @@
 </template>
 
 <script setup>
-import { computed, onMounted, ref } from 'vue';
-import { useRouter } from 'vue-router';
+import { computed, onMounted, ref, watch } from 'vue';
+import { useRoute, useRouter } from 'vue-router';
 import { useBoardStore } from '../stores/boardStore';
 import { useAuthStore } from '../stores/authStore';
 
 const boardStore = useBoardStore();
 const authStore = useAuthStore();
+const route = useRoute();
 const router = useRouter();
 
 const selectedCategory = ref('all');
@@ -127,9 +128,25 @@ const handleSelect = (id) => {
 
 const setCategory = (value) => {
   selectedCategory.value = value;
+  router.replace({ query: { ...route.query, category: value === 'all' ? undefined : value } });
+};
+
+const syncCategoryFromRoute = () => {
+  const q = route.query.category;
+  if (q && categories.some((c) => c.value === q)) {
+    selectedCategory.value = q;
+  } else {
+    selectedCategory.value = 'all';
+  }
 };
 
 onMounted(() => {
   boardStore.loadBoards();
+  syncCategoryFromRoute();
 });
+
+watch(
+  () => route.query.category,
+  () => syncCategoryFromRoute()
+);
 </script>

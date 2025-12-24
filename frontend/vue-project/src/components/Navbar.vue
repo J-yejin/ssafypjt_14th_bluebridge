@@ -1,61 +1,61 @@
 <template>
-  <nav class="bg-white/90 backdrop-blur-lg border-b border-blue-100/50 sticky top-0 z-50 shadow-sm">
+  <nav class="bg-white/90 backdrop-blur-lg border-b-2 border-blue-100/60 sticky top-0 z-50 shadow-md">
     <div class="max-w-[1400px] mx-auto px-8 lg:px-12">
-      <div class="flex justify-between items-center h-20">
+      <div class="flex justify-between items-center h-24">
         <router-link to="/" class="flex items-center gap-3 group">
-          <div
-            class="w-12 h-12 bg-gradient-to-br from-blue-500 via-blue-600 to-cyan-500 rounded-xl flex items-center justify-center shadow-lg group-hover:shadow-xl transition-all"
-          >
-            <span class="text-white tracking-tight">BB</span>
-          </div>
-          <div class="flex flex-col">
-            <span class="text-blue-900 tracking-tight">Blue Bridge</span>
-            <span class="text-xs text-gray-500">청년 정책 허브</span>
+          <img
+            src="/logo.png"
+            alt="Blue Bridge 로고"
+            class="w-24 h-20 shadow-lg group-hover:shadow-xl transition-all object-contain"
+          />
+          <div class="flex flex-col leading-tight">
+            <span class="text-blue-900 font-semibold tracking-tight text-lg">Blue Bridge</span>
+            <span class="text-sm text-gray-600 font-medium">청년 정책 허브</span>
           </div>
         </router-link>
 
-        <div class="flex gap-2 items-center">
+        <div class="flex gap-2 items-center text-base font-semibold">
           <router-link
             to="/"
             :class="[
-              'flex items-center gap-2 px-5 py-2.5 rounded-lg transition-all',
+              'flex items-center gap-2 px-5 py-3 rounded-lg transition-all',
               isActive('/') ? 'bg-blue-50 text-blue-700' : 'text-gray-600 hover:bg-blue-50/50 hover:text-blue-600'
             ]"
           >
-            <Home :size="16" />
+            <Home :size="18" />
             <span>홈</span>
           </router-link>
 
           <router-link
             to="/browse"
             :class="[
-              'flex items-center gap-2 px-5 py-2.5 rounded-lg transition-all',
+              'flex items-center gap-2 px-5 py-3 rounded-lg transition-all',
               isActive('/browse') ? 'bg-blue-50 text-blue-700' : 'text-gray-600 hover:bg-blue-50/50 hover:text-blue-600'
             ]"
           >
-            <Search :size="16" />
+            <Search :size="18" />
             <span>정책 찾기</span>
           </router-link>
 
           <router-link
             to="/recommend"
             :class="[
-              'flex items-center gap-2 px-5 py-2.5 rounded-lg transition-all',
+              'flex items-center gap-2 px-5 py-3 rounded-lg transition-all',
               isActive('/recommend') ? 'bg-blue-50 text-blue-700' : 'text-gray-600 hover:bg-blue-50/50 hover:text-blue-600'
             ]"
           >
-            <Sparkles :size="16" />
+            <Sparkles :size="18" />
             <span>정책 추천</span>
           </router-link>
 
           <router-link
             to="/boards"
             :class="[
-              'flex items-center gap-2 px-5 py-2.5 rounded-lg transition-all',
+              'flex items-center gap-2 px-5 py-3 rounded-lg transition-all',
               isActive('/boards') ? 'bg-blue-50 text-blue-700' : 'text-gray-600 hover:bg-blue-50/50 hover:text-blue-600'
             ]"
           >
-            <Search :size="16" />
+            <Search :size="18" />
             <span>게시글</span>
           </router-link>
 
@@ -65,15 +65,15 @@
             <router-link
               to="/profile"
               :class="[
-                'flex items-center gap-2 px-5 py-2.5 rounded-lg transition-all',
+                'flex items-center gap-2 px-5 py-3 rounded-lg transition-all',
                 isProfileActive ? 'accent-button text-white shadow-md' : 'bg-gray-50 text-gray-700 hover:bg-gray-100'
               ]"
             >
-              <User :size="16" />
+              <User :size="18" />
               <span>{{ profileLabel }}</span>
             </router-link>
             <button
-              class="px-4 py-2.5 rounded-lg text-gray-700 hover:bg-blue-50 transition-all border border-gray-200"
+              class="px-4 py-3 rounded-lg text-gray-700 hover:bg-blue-50 transition-all border border-gray-200"
               @click="handleLogout"
             >
               로그아웃
@@ -82,13 +82,13 @@
           <template v-else>
             <router-link
               to="/login"
-              class="px-4 py-2.5 rounded-lg text-gray-700 hover:bg-blue-50 transition-all border border-gray-200"
+              class="px-4 py-3 rounded-lg text-gray-700 hover:bg-blue-50 transition-all border border-gray-200"
             >
               로그인
             </router-link>
             <router-link
               to="/signup"
-              class="px-4 py-2.5 rounded-lg text-white accent-button shadow-md hover:shadow-lg transition-all"
+              class="px-4 py-3 rounded-lg text-white accent-button shadow-md hover:shadow-lg transition-all"
             >
               회원가입
             </router-link>
@@ -113,7 +113,7 @@ const isProfileActive = computed(() => route.path.startsWith('/profile'));
 const authStore = useAuthStore();
 const userStore = useUserStore();
 const isLoggedIn = computed(() => authStore.isAuthenticated);
-const profileLabel = computed(() => (userStore.isProfileComplete ? '마이 페이지' : '프로필'));
+const profileLabel = computed(() => (userStore.isProfileComplete ? '마이 프로필' : '프로필 설정'));
 
 const handleLogout = () => {
   authStore.clearTokens();
