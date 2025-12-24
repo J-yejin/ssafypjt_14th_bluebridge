@@ -69,7 +69,9 @@ def generate_top3_with_reasons(
     items = []
     for p in policies:
         summary = (p.summary or p.search_summary or "")[:200]
-        items.append(f"- id:{p.id}, 제목:{p.title}, 요약:{summary}")
+        sim = getattr(p, "query_similarity", None)
+        sim_text = f", 유사도:{sim:.3f}" if sim is not None else ""
+        items.append(f"- id:{p.id}, 제목:{p.title}{sim_text}, 요약:{summary}")
     candidates_str = "\n".join(items)
 
     prompt = (
@@ -81,8 +83,8 @@ def generate_top3_with_reasons(
         "- 과장 없이 사실 기반, 빈 reason 금지. 질의와 무관한 정책은 선택하지 않습니다.\n\n"
         f"사용자 질의: {query}\n"
         f"사용자 프로필(참고용): {profile_str}\n"
-        f"정책 후보들:\n{candidates_str}\n\n"
-        '출력 예시: [{"id": 1, "reason": "질의의 창업 장비 지원 요구와 이 정책의 장비비 지원이 일치, 지역/나이/대상도 충족"}]'
+        f"정책 후보들(유사도 높은 순으로 제공됨):\n{candidates_str}\n\n"
+        '출력 예시: [{"id": 1, "reason": "질의의 요구와 이 정책의 지원이 일치, 지역/나이/대상도 충족"}]'
     )
 
     payload = {

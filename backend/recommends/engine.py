@@ -74,11 +74,14 @@ def embed_texts(texts: List[str], mode: str = "document") -> List[List[float]]:
 
 
 def build_embedding_text(policy: Policy, max_chars: int = 3500) -> str:
+    """
+    임베딩 입력을 summary 중심으로 구성하고 title은 보조로 둡니다.
+    """
     parts = []
-    if policy.title:
-        parts.append(policy.title)
     if policy.summary:
         parts.append(policy.summary)
+    if policy.title:
+        parts.append(policy.title)
     if policy.policy_detail:
         parts.append(policy.policy_detail)
     text = "\n".join([p for p in parts if p])
@@ -135,7 +138,6 @@ def search_with_chroma(
 
     def _chroma_query(where=None):
         try:
-            collection = get_chroma_collection()
             [query_embedding] = embed_texts([combined_query], mode="query")
             result = vector_db.query(
                 query_embeddings=[query_embedding],
@@ -182,15 +184,22 @@ POLICY_TARGET_FORCE_KEYS = {
     "국가유공자",
     "장애인", "장애",
     "보훈가족", "보훈대상자", "보훈",
-    "한부모",
-    "저소득층", "저소득",
+    "한부모가정", "한부모·조손",
+    "저소득층", "저소득","기초생활수급자"
     "다자녀",
-    "군인·전역예정",
-    "농어업인",
+    "군인",
+    "농업인",
+    "다문화·탈북민",
+    "여성",
+    "한부모·조손"
 }
 
 # 프로필 점수를 0~10으로 변환할 때 사용할 기준값 (가산치 합이 5 내외이므로 5를 상한으로 사용)
 PROFILE_SCORE_MAX = 5.0
+GENDER_KEYWORDS = {
+    "male": {"남성", "남자"},
+    "female": {"여성", "여자"},
+}
 
 
 def _requires_policy_target(targets: List[str]) -> bool:
@@ -202,6 +211,22 @@ def _requires_policy_target(targets: List[str]) -> bool:
         lkey = key.lower()
         if any(lkey in t for t in lowered):
             return True
+    return False
+
+
+def _gender_mismatch(policy_targets: List[str], profile_gender: Optional[str]) -> bool:
+    """
+    정책 특수대상에 성별 키워드가 있으면 프로필 성별과 불일치 시 True.
+    프로필 성별이 없으면 성별 지정 정책은 제외.
+    """
+    if not policy_targets:
+        return False
+    lowered = {str(t).strip().lower() for t in policy_targets}
+    for g, keys in GENDER_KEYWORDS.items():
+        if any(k in lowered for k in keys):
+            if not profile_gender:
+                return True
+            return profile_gender.lower() != g
     return False
 
 
@@ -228,7 +253,7 @@ def profile_match_score(policy: Policy, profile: Optional[Profile]) -> float:
     # employment / major / special target
     if profile.employment_status and policy.employment:
         if profile.employment_status in _safe_list(policy.employment):
-            score += 1.2
+            score += 0.6
 
     if profile.major and policy.major:
         if profile.major in _safe_list(policy.major):
@@ -245,7 +270,7 @@ def profile_match_score(policy: Policy, profile: Optional[Profile]) -> float:
         if _requires_policy_target(_safe_list(policy.special_target)):
             penalties += 0.8
 
-    # gender / income_quintile / education_level 일부 반영
+    # income_quintile / education_level 일부 반영
     if profile.income_quintile and policy.special_target:
         if profile.income_quintile in _safe_list(policy.special_target):
             score += 0.3
@@ -256,10 +281,10 @@ def profile_match_score(policy: Policy, profile: Optional[Profile]) -> float:
     # interest -> keywords/service_type match
     if profile.interest:
         keywords = _safe_list(getattr(policy, "keywords", []))
-        service_type = getattr(policy, "service_type", None)
+        category = getattr(policy, "category", None)
         if any(profile.interest in str(k) for k in keywords):
             score += 1.0
-        if service_type and profile.interest in str(service_type):
+        if category and profile.interest in str(category):
             score += 0.6
 
     # age soft check
@@ -310,6 +335,10 @@ def rerank_with_profile(
                 continue
         else:
             policy.policy_target_match = True
+
+        # 성별 지정 정책인데 프로필 성별 불일치 -> 제외
+        if profile and _gender_mismatch(list(policy_targets), getattr(profile, "gender", None)):
+            continue
 
         sim = 1.0 / (1.0 + dist) if dist is not None else 0.0
         pscore = profile_match_score(policy, profile)

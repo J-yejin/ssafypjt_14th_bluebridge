@@ -63,13 +63,15 @@
           </div>
           <div class="flex-1">
             <h2 class="text-blue-900 mb-2 text-2xl">AI에게 궁금한 정책을 물어보세요</h2>
-            <p class="text-gray-600 text-lg">궁금한 내용을 질문하면, 조건에 맞는 정책을 찾아드려요.</p>
+            <p class="text-gray-600 text-lg">
+              분야(주거/창업/교육) + 대상(청년/대학생/저소득 등) + 혜택(장비비/대출/장학금)만 적어도 충분해요.
+            </p>
           </div>
         </div>
         <div class="flex gap-6">
           <input
             type="text"
-            placeholder="궁금한 정책 주제/지원 항목/대상 조건을 입력해보세요"
+            placeholder="예) 분야:창업 | 대상:청년 | 혜택:장비 구입비 지원"
             v-model="ragQuery"
             @keypress.enter="handleRagSearch"
             class="flex-1 px-6 py-4 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent text-lg"
@@ -123,7 +125,6 @@
             </router-link>
             <div class="flex flex-wrap gap-2 text-xs text-gray-600">
               <span class="px-2 py-1 rounded-full bg-gray-100">유사도 {{ formatScore(card.similarity_score_10) }}</span>
-              <span class="px-2 py-1 rounded-full bg-gray-100">프로필 {{ formatScore(card.profile_score_10) }}</span>
               <span
                 v-if="card.policy_target_required"
                 :class="[

@@ -16,14 +16,11 @@ from .engine import (
 from .models import RecommendationLog
 
 QUERY_EXAMPLES = [
-    "청년 창업 초기 장비 구입비 지원하는 사업 있어?",
-    "서울 거주 대학원생 등록금·장학금 지원 제도 알려줘",
-    "다자녀 가구 전기요금·교통비 할인 정책 찾아줘",
-    "장애인 보조기기 대여나 수리비 지원 프로그램 있나요?",
-    "군 전역 예정자 직업훈련 바우처/교육비 지원 사업 추천해줘",
-    "농어업인 재해보험이나 경영안정 자금 지원 정책 찾아줘",
-    "신혼부부 전세자금 대출 이자 지원 정책 알려줘",
-    "저소득층 의료비나 건강검진 바우처 지원 사업 뭐가 있지?",
+    "분야:창업 | 대상:청년 | 혜택:장비 구입비 지원",
+    "분야:교육 | 대상:대학원생 | 혜택:등록금·장학금",
+    "분야:주거 | 대상:청년 | 혜택:전세/월세 대출·이자지원",
+    "분야:보건 | 대상:저소득 | 혜택:의료비/건강검진 바우처",
+    "분야:취업 | 대상:군 전역 예정자 | 혜택:직업훈련 바우처",
 ]
 
 
@@ -131,11 +128,13 @@ def recommend_detail(request):
         return Response({"detail": "query 필드가 비어있습니다"}, status=400)
 
     profile, _ = Profile.objects.get_or_create(user=request.user)
-    policy_ids, scores = search_with_chroma(query_text=query, profile=profile, top_k=10)
+    # 더 넓은 후보(최대 50개)에서 유사도 중심으로 상위 10 추려서 사용
+    policy_ids, scores = search_with_chroma(query_text=query, profile=profile, top_k=50)
     policies = fetch_policies_by_ids(policy_ids)
-    # 검색 모드: 유사도 우선, 프로필은 보조
-    reranked = rerank_with_profile(policies, scores, profile, weight_profile=0.2, weight_similarity=0.8)
+    # 검색 모드: 유사도 우선(0.9), 프로필 보조(0.1)
+    reranked = rerank_with_profile(policies, scores, profile, weight_profile=0.1, weight_similarity=0.9)
     reranked = assign_ux_scores(reranked)
+    reranked = reranked[:10]
 
     dist_map = {pid: dist for pid, dist in zip(policy_ids, scores)}
     serializer = PolicyBasicSerializer(reranked, many=True)
