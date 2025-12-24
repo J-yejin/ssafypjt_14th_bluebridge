@@ -78,8 +78,8 @@ const handleSubmit = async () => {
     return;
   }
   try {
-    const created = await boardStore.addBoard(form);
-    router.push(`/boards/${created.id}`);
+    await boardStore.addBoard(form);
+    router.push('/boards');
   } catch (err) {
     alert(err?.message || '작성에 실패했습니다.');
   }

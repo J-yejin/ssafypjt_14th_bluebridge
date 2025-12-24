@@ -9,8 +9,7 @@
             class="w-24 h-20 shadow-lg group-hover:shadow-xl transition-all object-contain"
           />
           <div class="flex flex-col leading-tight">
-            <span class="text-blue-900 font-semibold tracking-tight text-lg">Blue Bridge</span>
-            <span class="text-sm text-gray-600 font-medium">청년 정책 허브</span>
+            <span class="text-lg text-gray-600 font-medium">청년 정책 허브</span>
           </div>
         </router-link>
 

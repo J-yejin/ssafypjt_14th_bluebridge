@@ -14,6 +14,7 @@
           </p>
         </div>
       </div>
+
       <div class="prose max-w-none text-gray-700 whitespace-pre-line leading-relaxed">
         {{ boardStore.current.content }}
       </div>
@@ -54,7 +55,23 @@
               class="w-full border rounded-lg px-4 py-3 focus:ring-2 focus:ring-blue-500 resize-none"
               placeholder="댓글을 입력하세요"
             />
-            <div class="flex justify-end">
+            <div class="flex justify-end gap-3 flex-wrap">
+              <button
+                v-if="isAuthor"
+                type="button"
+                class="px-5 py-2.5 rounded-lg border border-gray-200 text-gray-700 hover:bg-gray-50 transition"
+                @click="handleEditPost"
+              >
+                게시글 수정
+              </button>
+              <button
+                v-if="isAuthor"
+                type="button"
+                class="px-5 py-2.5 rounded-lg border border-red-200 text-red-600 hover:bg-red-50 transition"
+                @click="handleDeletePost"
+              >
+                게시글 삭제
+              </button>
               <button
                 type="button"
                 @click="handleAddComment"
@@ -86,6 +103,10 @@ const boardStore = useBoardStore();
 const authStore = useAuthStore();
 const newComment = ref('');
 
+const isAuthor = computed(
+  () => boardStore.current?.user && boardStore.current.user === authStore.username
+);
+
 const formatDate = (value) => {
   if (!value) return '';
   return new Date(value).toLocaleString();
@@ -94,7 +115,6 @@ const formatDate = (value) => {
 const displayCategory = (value) => {
   const map = {
     notice: '공지사항',
-    resource: '자료실',
     review: '자료실',
     free: '자유게시판',
     question: '자유게시판',
@@ -139,6 +159,33 @@ const handleDeleteComment = async (commentId) => {
     await boardStore.removeComment(commentId);
   } catch (err) {
     alert(err?.message || '댓글 삭제에 실패했습니다.');
+  }
+};
+
+const handleEditPost = async () => {
+  const current = boardStore.current;
+  if (!current) return;
+  const title = window.prompt('제목을 수정하세요', current.title);
+  const content = window.prompt('내용을 수정하세요', current.content);
+  if (!title || !content) return;
+  try {
+    await boardStore.editBoard(current.id, { title, content, category: current.category });
+    alert('게시글을 수정했습니다.');
+  } catch (err) {
+    alert(err?.message || '게시글 수정에 실패했습니다.');
+  }
+};
+
+const handleDeletePost = async () => {
+  const current = boardStore.current;
+  if (!current) return;
+  if (!window.confirm('게시글을 삭제하시겠습니까?')) return;
+  try {
+    await boardStore.removeBoard(current.id);
+    alert('게시글을 삭제했습니다.');
+    router.push('/boards');
+  } catch (err) {
+    alert(err?.message || '게시글 삭제에 실패했습니다.');
   }
 };
 
