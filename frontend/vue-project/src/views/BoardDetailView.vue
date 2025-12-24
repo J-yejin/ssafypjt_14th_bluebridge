@@ -6,7 +6,7 @@
     <div v-else class="bg-white rounded-2xl shadow-md border border-gray-100 p-8 space-y-8">
       <div class="flex justify-between items-start mb-6">
         <div>
-          <p class="text-sm text-gray-500">{{ boardStore.current.category }}</p>
+          <p class="text-sm text-gray-500">{{ displayCategory(boardStore.current.category) }}</p>
           <h1 class="text-3xl font-semibold text-blue-900 mt-2">{{ boardStore.current.title }}</h1>
           <p class="text-sm text-gray-500 mt-2">
             작성자 {{ boardStore.current.user }} · 조회 {{ boardStore.current.views }} ·
@@ -21,10 +21,10 @@
       <!-- 댓글 -->
       <div class="pt-6 border-t border-gray-100">
         <h2 class="text-xl font-semibold text-blue-900 mb-4">댓글</h2>
-        <div v-if="(boardStore.current.comments || []).length === 0" class="text-gray-500 mb-4">첫 댓글을 남겨보세요.</div>
+        <div v-if="sortedComments.length === 0" class="text-gray-500 mb-4">첫 댓글을 남겨주세요.</div>
         <ul class="space-y-4">
           <li
-            v-for="comment in boardStore.current.comments"
+            v-for="comment in sortedComments"
             :key="comment.id"
             class="border border-gray-100 rounded-xl p-4 bg-gray-50"
           >
@@ -52,7 +52,7 @@
               v-model="newComment"
               rows="3"
               class="w-full border rounded-lg px-4 py-3 focus:ring-2 focus:ring-blue-500 resize-none"
-              placeholder="댓글을 작성하세요"
+              placeholder="댓글을 입력하세요"
             />
             <div class="flex justify-end">
               <button
@@ -66,7 +66,7 @@
           </div>
           <div v-else class="text-gray-500">
             댓글을 작성하려면
-            <router-link to="/login" class="text-blue-600 underline">로그인</router-link>이 필요합니다.
+            <router-link to="/login" class="text-blue-600 underline">로그인</router-link> 해주세요.
           </div>
         </div>
       </div>
@@ -75,7 +75,7 @@
 </template>
 
 <script setup>
-import { onMounted, ref } from 'vue';
+import { computed, onMounted, ref } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { useBoardStore } from '../stores/boardStore';
 import { useAuthStore } from '../stores/authStore';
@@ -90,6 +90,22 @@ const formatDate = (value) => {
   if (!value) return '';
   return new Date(value).toLocaleString();
 };
+
+const displayCategory = (value) => {
+  const map = {
+    notice: '공지사항',
+    resource: '자료실',
+    review: '자료실',
+    free: '자유게시판',
+    question: '자유게시판',
+  };
+  return map[value] || '기타';
+};
+
+const sortedComments = computed(() => {
+  const list = boardStore.current?.comments || [];
+  return [...list].sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+});
 
 const load = async () => {
   if (!authStore.isAuthenticated) {

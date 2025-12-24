@@ -3,65 +3,71 @@
     <!-- Hero -->
     <section class="hero">
       <div class="hero-left card">
-        <div class="eyebrow">이벤트</div>
         <h1>
-          청년 정책 신규 가입<br />
-          혜택 안내
+          청년 정책 한눈에<br />
+          맞춤 추천까지
         </h1>
         <p class="body">
-          한 번의 가입으로 맞춤 알림을 받아 보고<br />
-          신청 기간을 놓치지 마세요.
+          조건에 맞는 정책을 빠르게 찾아보고<br />
+          신청 기간도 놓치지 마세요.
         </p>
+        <img src="/feature-home-big.png" alt="청년 정책 허브" class="hero-illustration" />
         <div class="actions">
-          <button class="btn primary" @click="goRecommend">맞춤 알림 받기</button>
+          <button class="btn primary" @click="goRecommend">맞춤 추천 받기</button>
           <button class="btn ghost" @click="goBrowse">정책 둘러보기</button>
         </div>
       </div>
 
+      <!-- Calendar -->
       <div class="hero-right">
-        <div class="card service">
-          <p class="eyebrow">빠르고 안전한</p>
-          <h3>나의 청년정책 한눈에</h3>
-          <div class="service-grid">
-            <div class="pill">신청 일정</div>
-            <div class="pill">나의 관심정책</div>
-          </div>
-        </div>
         <div class="card notice">
           <div class="notice-header">
-            <p class="eyebrow">알려드립니다</p>
-            <h4>정책 신청 일정 사전 안내</h4>
-            <p class="date">2025.03 업데이트</p>
+            <p class="eyebrow">즐겨찾기 일정</p>
+            <h4>{{ currentYear }}년 {{ currentMonth }}월</h4>
+            <p class="date">즐겨찾기한 정책의 신청 기간을 달력에 표시합니다</p>
           </div>
-          <div class="notice-calendar" aria-label="정책 신청 일정">
+          <div class="notice-calendar" aria-label="즐겨찾기 일정 달력">
             <div class="calendar-header">
-              <span class="calendar-month">2025.03</span>
+              <button class="nav-btn" @click="changeMonth(-1)">‹</button>
+              <span class="calendar-month">{{ currentYear }}.{{ currentMonthString }}</span>
+              <button class="nav-btn" @click="changeMonth(1)">›</button>
               <span class="calendar-legend">
                 <span class="calendar-dot" aria-hidden="true"></span>
                 신청 일정
               </span>
             </div>
+            <div class="weekday-row">
+              <span v-for="w in weekdays" :key="w" class="weekday">{{ w }}</span>
+            </div>
             <div class="calendar-grid">
-              <div class="calendar-day">2</div>
-              <div class="calendar-day">3</div>
-              <div class="calendar-day">4</div>
-              <div class="calendar-day event">
-                5
-                <span class="event-label">접수</span>
+              <div
+                v-for="(day, idx) in calendarDays"
+                :key="idx"
+                class="calendar-cell"
+                :class="{ empty: !day, 'has-events': day?.events?.length }"
+              >
+                <div v-if="day" class="day-number">{{ day.day }}</div>
+                <div v-if="day && day.events.length" class="event-marker">
+                  <span class="event-dot" aria-hidden="true"></span>
+                  <div class="event-tooltip">
+                    <div class="tooltip-title">오늘의 정책 일정</div>
+                    <ul>
+                      <li v-for="(event, i) in day.events" :key="i">
+                        <span class="event-title">{{ event.title }}</span>
+                      </li>
+                    </ul>
+                  </div>
+                </div>
               </div>
-              <div class="calendar-day">6</div>
-              <div class="calendar-day">7</div>
-              <div class="calendar-day">8</div>
-              <div class="calendar-day">9</div>
-              <div class="calendar-day">10</div>
-              <div class="calendar-day">11</div>
-              <div class="calendar-day event">
-                12
-                <span class="event-label">마감</span>
+            </div>
+            <div v-if="openEndedEvents.length" class="open-ended">
+              <div class="open-ended-title">상시 모집</div>
+              <div class="open-ended-list">
+                <div v-for="(ev, idx) in openEndedEvents" :key="idx" class="open-ended-item">
+                  <span class="event-title">{{ ev.title }}</span>
+                  <span class="event-range">상시 모집</span>
+                </div>
               </div>
-              <div class="calendar-day">13</div>
-              <div class="calendar-day">14</div>
-              <div class="calendar-day">15</div>
             </div>
           </div>
         </div>
@@ -71,8 +77,8 @@
     <!-- Feature highlights -->
     <section class="features">
       <div class="section-title">
-        <h2>신뢰와 안정의 정책 허브</h2>
-        <p>여러 기관의 정책을 한 번에 확인하고, 맞춤 추천을 받아보세요.</p>
+        <h2>한눈에 보는 청년 정책</h2>
+        <p>분야별로 빠르게 살펴보고, 맞춤 추천까지 받아보세요.</p>
       </div>
       <div class="feature-grid">
         <div
@@ -93,27 +99,27 @@
     <section class="banners">
       <div class="banner card">
         <div>
-          <p class="eyebrow">미리 체험하기</p>
-          <h3>정책 브리핑 맛보기</h3>
-          <p>관심 분야를 선택하면 샘플 브리핑을 보여드립니다.</p>
+          <p class="eyebrow">미리 체험해보기</p>
+          <h3>정책 브리프 맛보기</h3>
+          <p>관심분야를 선택하면 샘플 브리프를 보여드립니다.</p>
         </div>
-        <button class="btn primary">샘플 보기</button>
+        <button class="btn primary" @click="goBrowse">브리프 보기</button>
       </div>
       <div class="banner card">
         <div>
-          <p class="eyebrow">온라인 신청</p>
-          <h3>신청 링크 바로가기</h3>
-          <p>지원 대상 확인 후, 한 번에 신청 페이지로 이동하세요.</p>
+          <p class="eyebrow">신청 바로가기</p>
+          <h3>정책 링크 모아보기</h3>
+          <p>지역과 분야를 고르면 바로 신청 링크를 확인할 수 있어요.</p>
         </div>
-        <button class="btn ghost">신청 링크 모아보기</button>
+        <button class="btn ghost" @click="goBrowse">신청 링크 보기</button>
       </div>
     </section>
 
     <!-- Partner / categories -->
     <section class="partners card">
       <div class="section-title compact">
-        <h2>나만의 정책 파트너</h2>
-        <p>카테고리별 맞춤 정책을 빠르게 탐색하세요.</p>
+        <h2>분야별 정책 큐레이션</h2>
+        <p>카테고리별로 맞춤 정책을 빠르게 탐색하세요.</p>
       </div>
       <div class="partner-grid">
         <div class="partner-tile">
@@ -122,23 +128,23 @@
         </div>
         <div class="partner-tile">
           <div class="bubble blue">🏠</div>
-          <span>주거·대출</span>
+          <span>주거·생활</span>
         </div>
         <div class="partner-tile">
           <div class="bubble sand">🎓</div>
           <span>교육·훈련</span>
         </div>
         <div class="partner-tile">
-          <div class="bubble coral">🧡</div>
-          <span>복지·의료</span>
+          <div class="bubble coral">🩺</div>
+          <span>복지·법률</span>
         </div>
         <div class="partner-tile">
-          <div class="bubble purple">💳</div>
+          <div class="bubble purple">💰</div>
           <span>금융·지원금</span>
         </div>
         <div class="partner-tile">
-          <div class="bubble gray">📑</div>
-          <span>기타 서비스</span>
+          <div class="bubble gray">✨</div>
+          <span>기타</span>
         </div>
       </div>
     </section>
@@ -152,15 +158,15 @@
         </div>
         <ul>
           <li>
-            <span>정책 데이터 업데이트 안내</span>
+            <span>정책 업데이트 안내</span>
             <span class="date">2025.03.01</span>
           </li>
           <li>
-            <span>맞춤 추천 베타 오픈</span>
+            <span>맞춤 추천 배포</span>
             <span class="date">2025.02.20</span>
           </li>
           <li>
-            <span>서비스 점검 일정 안내</span>
+            <span>서비스 개선 안내</span>
             <span class="date">2025.02.05</span>
           </li>
         </ul>
@@ -177,7 +183,7 @@
             <span class="tag">PDF</span>
           </li>
           <li>
-            <span>연령·소득 기준 정리표</span>
+            <span>연령·소득 가이드</span>
             <span class="tag">XLSX</span>
           </li>
           <li>
@@ -203,34 +209,161 @@
 </template>
 
 <script setup>
+import { ref, computed, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
+import { usePolicyStore } from '../stores/policyStore';
+import { useAuthStore } from '../stores/authStore';
 
 const router = useRouter();
+const policyStore = usePolicyStore();
+const authStore = useAuthStore();
+
 const goBrowse = () => router.push('/browse');
 const goRecommend = () => router.push('/recommend');
 
-// 이미지가 없으면 fallback 이모지 사용
+const currentDate = ref(new Date());
+const currentYear = computed(() => currentDate.value.getFullYear());
+const currentMonth = computed(() => currentDate.value.getMonth() + 1);
+const currentMonthString = computed(() => currentMonth.value.toString().padStart(2, '0'));
+const weekdays = ['일', '월', '화', '수', '목', '금', '토'];
+
+const cachedPolicies = ref([]);
+
+const wishlistPolicies = computed(() =>
+  policyStore.policies.filter((p) => policyStore.isWishlisted(p.id))
+);
+
+// 정책 일정(기간 있음)
+const calendarPolicies = computed(() => {
+  const normalize = (list = []) =>
+    list
+      .filter((p) => p.startDate && p.endDate) // 양쪽 날짜 모두 있을 때만 달력에 표시
+      .map((p) => ({
+        title: p.title,
+        startDate: p.startDate,
+        endDate: p.endDate,
+      }));
+
+  const combined = [...normalize(wishlistPolicies.value), ...normalize(cachedPolicies.value)];
+  const seen = new Set();
+  return combined.filter((p) => {
+    if (seen.has(p.title)) return false;
+    seen.add(p.title);
+    return true;
+  });
+});
+
+// 상시 모집(기간 없음)
+const openEndedEvents = computed(() => {
+  const isAlways = (p) => !p.startDate && !p.endDate;
+  const combined = [
+    ...(wishlistPolicies.value || []).filter(isAlways),
+    ...(cachedPolicies.value || []).filter(isAlways),
+  ];
+  const seen = new Set();
+  return combined.filter((p) => {
+    if (seen.has(p.title)) return false;
+    seen.add(p.title);
+    return true;
+  });
+});
+
+const parseDate = (value) => {
+  if (!value) return null;
+  const d = new Date(value);
+  return Number.isNaN(d.getTime()) ? null : d;
+};
+
+const eventsForMonth = computed(() => {
+  const first = new Date(currentYear.value, currentMonth.value - 1, 1);
+  const last = new Date(currentYear.value, currentMonth.value, 0, 23, 59, 59);
+  const events = [];
+  calendarPolicies.value.forEach((p) => {
+    const s = parseDate(p.startDate);
+    const e = parseDate(p.endDate);
+    const start = s || e;
+    const end = e || s;
+    if (!start && !end) return;
+    const startInRange = start && start <= last;
+    const endInRange = end && end >= first;
+    if (startInRange && endInRange) {
+      events.push({
+        title: p.title,
+        start,
+        end,
+      });
+    }
+  });
+  return events;
+});
+
+const calendarDays = computed(() => {
+  const daysInMonth = new Date(currentYear.value, currentMonth.value, 0).getDate();
+  const firstWeekday = new Date(currentYear.value, currentMonth.value - 1, 1).getDay();
+  const cells = [];
+  for (let i = 0; i < firstWeekday; i += 1) cells.push(null);
+  for (let day = 1; day <= daysInMonth; day += 1) {
+    const dayEvents = eventsForMonth.value.filter((ev) => {
+      const d = new Date(currentYear.value, currentMonth.value - 1, day);
+      return ev.start <= d && ev.end >= d;
+    });
+    cells.push({ day, events: dayEvents.map((ev) => ({ title: ev.title })) });
+  }
+  return cells;
+});
+
+const changeMonth = (delta) => {
+  const d = new Date(currentDate.value);
+  d.setMonth(d.getMonth() + delta);
+  currentDate.value = d;
+};
+
+onMounted(async () => {
+  // 캐시 로드
+  try {
+    const cached = JSON.parse(localStorage.getItem('bb_calendar_cache') || '[]');
+    if (Array.isArray(cached)) cachedPolicies.value = cached;
+  } catch (_) {
+    cachedPolicies.value = [];
+  }
+
+  if (authStore.isAuthenticated) {
+    await policyStore.loadWishlist();
+    const ids = Array.isArray(policyStore.wishlistIds) ? policyStore.wishlistIds : [];
+    for (const id of ids) {
+      await policyStore.loadPolicyById(id);
+    }
+    const toCache = wishlistPolicies.value.map((p) => ({
+      title: p.title,
+      startDate: p.startDate,
+      endDate: p.endDate,
+    }));
+    localStorage.setItem('bb_calendar_cache', JSON.stringify(toCache));
+    cachedPolicies.value = toCache;
+  }
+});
+
 const featureCards = [
   {
     title: '기관별 정책 모음',
-    desc: '정부·지자체·용책을 한 곳에.',
+    desc: '취업·주거·교육·금융 정책을 한 곳에.',
     className: 'mint',
-    image: '/feature-org.png', // public/feature-org.png
-    fallback: '🏦',
+    image: '/feature-org.png',
+    fallback: '🏢',
   },
   {
-    title: '신청 일정 알림',
-    desc: '마감일 이전에 미리 알림을 받아보세요.',
+    title: '신청 기간 캘린더',
+    desc: '신청 마감 전에 알림을 받아보세요.',
     className: 'sand',
-    image: '/feature-calendar.png', // public/feature-calendar.png
-    fallback: '📅',
+    image: '/feature-calendar.png',
+    fallback: '🗓',
   },
   {
     title: '맞춤 추천',
     desc: '프로필 기반으로 꼭 맞는 정책 찾기.',
     className: 'purple',
-    image: '/feature-recommend.png', // public/feature-recommend.png
-    fallback: '🔍',
+    image: '/feature-recommend.png',
+    fallback: '✨',
   },
 ];
 </script>
@@ -278,6 +411,8 @@ const featureCards = [
   background: linear-gradient(135deg, #c5f5b1 0%, #7fcf92 100%);
   color: #fff;
   text-align: center;
+  position: relative;
+  overflow: hidden;
 }
 
 .hero-left h1 {
@@ -294,7 +429,7 @@ const featureCards = [
 }
 
 .eyebrow {
-  font-size: 12px;
+  font-size: 20px;
   font-weight: 700;
   letter-spacing: 0.08em;
   text-transform: uppercase;
@@ -303,6 +438,14 @@ const featureCards = [
 
 .hero-left .eyebrow {
   color: #d7f4df;
+}
+
+.hero-illustration {
+  width: 100%;
+  max-width: 1000px;
+  margin: 1px auto 0;
+  display: block;
+  filter: drop-shadow(0 12px 24px rgba(0, 0, 0, 0.15));
 }
 
 .actions {
@@ -353,29 +496,6 @@ const featureCards = [
   text-align: center;
 }
 
-.service h3 {
-  margin: 6px 0 10px;
-  font-size: 22px;
-  color: #0f172a;
-}
-
-.service-grid {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 8px;
-  margin: 10px 0;
-}
-
-.pill {
-  background: #ecf7e9;
-  color: #2f7c46;
-  padding: 10px 12px;
-  border-radius: 12px;
-  text-align: center;
-  font-weight: 600;
-  font-size: 14px;
-}
-
 .notice h4 {
   margin: 4px 0 6px;
   font-size: 18px;
@@ -409,6 +529,16 @@ const featureCards = [
   margin-bottom: 8px;
 }
 
+.nav-btn {
+  background: #e2e8f0;
+  border: none;
+  border-radius: 8px;
+  padding: 6px 8px;
+  cursor: pointer;
+  font-weight: 800;
+  color: #0f172a;
+}
+
 .calendar-legend {
   display: inline-flex;
   align-items: center;
@@ -424,34 +554,147 @@ const featureCards = [
   box-shadow: 0 0 0 3px rgba(52, 211, 153, 0.2);
 }
 
+.weekday-row {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 4px;
+  font-size: 12px;
+  font-weight: 700;
+  color: #475569;
+  margin-bottom: 7px;
+}
+
+.weekday {
+  padding: 5px 0;
+  background: #e6edf5;
+  border-radius: 7px;
+}
+
 .calendar-grid {
   display: grid;
   grid-template-columns: repeat(7, minmax(0, 1fr));
-  gap: 6px;
-  font-size: 12px;
-  color: #475569;
+  gap: 5px;
 }
 
-.calendar-day {
-  min-height: 32px;
-  border-radius: 8px;
-  display: grid;
-  place-items: center;
+.calendar-cell {
+  min-height: 70px;
+  border-radius: 10px;
   background: #ffffff;
   border: 1px solid #e2e8f0;
+  padding: 6px;
+  text-align: left;
+  display: grid;
+  gap: 4px;
 }
 
-.calendar-day.event {
-  border-color: #34d399;
-  background: #ecfdf5;
-  color: #047857;
-  font-weight: 700;
+.calendar-cell.empty {
+  background: #f8fafc;
 }
 
-.event-label {
+.day-number {
+  font-weight: 800;
+  color: #0f172a;
+  font-size: 13px;
+}
+
+.has-events {
+  position: relative;
+}
+
+.event-marker {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+}
+
+.event-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: #22c55e;
+  display: inline-block;
+  box-shadow: 0 0 0 4px rgba(34, 197, 94, 0.15);
+}
+
+.event-tooltip {
+  position: absolute;
+  top: 18px;
+  right: 0;
+  background: #0f172a;
+  color: #e2e8f0;
+  padding: 8px 10px;
+  border-radius: 10px;
+  min-width: 180px;
+  z-index: 10;
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.2);
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(4px);
+  transition: opacity 0.15s ease, transform 0.15s ease;
+}
+
+.event-marker:hover .event-tooltip {
+  opacity: 1;
+  pointer-events: auto;
+  transform: translateY(0);
+}
+
+.event-tooltip ul {
+  margin: 6px 0 0;
+  padding-left: 12px;
+  text-align: left;
+  display: grid;
+  gap: 4px;
+  font-size: 12px;
+}
+
+.event-tooltip li {
+  list-style: disc;
+}
+
+.tooltip-title {
+  font-weight: 800;
+  font-size: 12px;
+  margin: 0;
+  color: #bbf7d0;
+}
+
+.open-ended {
+  margin-top: 10px;
+  padding: 10px;
+  background: #f0fdf4;
+  border: 1px solid #34d399;
+  border-radius: 10px;
+  text-align: left;
+}
+
+.open-ended-title {
+  font-weight: 800;
+  color: #059669;
+  margin-bottom: 6px;
+}
+
+.open-ended-list {
+  display: grid;
+  gap: 6px;
+}
+
+.open-ended-item {
+  padding: 6px;
+  border-radius: 8px;
+  background: #fff;
+  border: 1px solid #d1fae5;
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 12px;
+  color: #065f46;
+}
+
+.event-range {
   display: block;
-  font-size: 10px;
-  margin-top: 2px;
+  color: #059669;
+  font-weight: 700;
 }
 
 .features {

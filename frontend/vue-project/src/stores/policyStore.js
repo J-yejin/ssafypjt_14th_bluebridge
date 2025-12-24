@@ -54,6 +54,23 @@ const cleanList = (items = []) => {
   return result;
 };
 
+const cleanText = (text = '') => {
+  const raw = (text || '').toString();
+  if (!raw) return '';
+  // Replace common HTML entities and trim wrapping quotes
+  const decoded = raw.replace(/&quot;/gi, '"').replace(/&#39;/g, "'").trim();
+  // Remove wrapping quotes and stray double quotes inside
+  const noOuterQuotes = decoded.replace(/^"+|"+$/g, '').replace(/^'+|'+$/g, '');
+  return noOuterQuotes.replace(/"/g, '');
+};
+
+const normalizeDate = (value) => {
+  if (!value) return null;
+  const v = value.toString();
+  const m = v.match(/^(\d{4}-\d{2}-\d{2})/);
+  return m ? m[1] : v;
+};
+
 const transformPolicy = (p) => {
   if (!p) return null;
 
@@ -136,6 +153,9 @@ const transformPolicy = (p) => {
   const region = p.region_sigungu || p.region_sido || '';
   const regionBuckets = mapRegionsToBuckets(p.applicable_regions, region);
 
+  const startDate = normalizeDate(p.start_date || p.startDate || p.raw?.start_date);
+  const endDate = normalizeDate(p.end_date || p.endDate || p.raw?.end_date);
+
   const eligibilitySections = [
     { label: '취업·직업', values: p.employment_requirements || p.employment || [] },
     { label: '학력', values: p.education_requirements || p.education || [] },
@@ -149,16 +169,20 @@ const transformPolicy = (p) => {
     return cleaned.map((v) => `${section.label}: ${v}`);
   });
 
+  const cleanedTitle = cleanText(p.title || '');
+
   return {
     id: p.id ?? p.source_id ?? p.sourceId ?? String(Math.random()),
-    title: p.title || '',
+    title: cleanedTitle,
     category,
     categories: mappedCategories,
     organization: p.provider || '',
     description: formatMultiline(p.summary || ''),
     eligibility,
     benefits: formatMultiline(p.policy_detail || p.apply_method || ''),
-    applicationPeriod: toPeriod(p.start_date, p.end_date),
+    applicationPeriod: toPeriod(startDate, endDate),
+    startDate,
+    endDate,
     ageRange: toAgeRange(p.min_age, p.max_age),
     region: regionBuckets[0],
     regionBucket: regionBuckets[0],

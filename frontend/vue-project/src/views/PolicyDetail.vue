@@ -84,7 +84,7 @@
             <h2 class="text-blue-900 mb-6 text-3xl border-l-4 border-blue-500 pl-6">정책 설명</h2>
             <div class="pl-6">
               <div class="bg-gradient-to-br from-blue-50 via-cyan-50 to-blue-50 rounded-2xl p-6 md:p-8 border-2 border-blue-200 shadow-inner">
-                <pre class="text-gray-700 leading-relaxed text-base md:text-lg whitespace-pre-wrap break-words overflow-auto w-full max-w-full">
+                <pre class="policy-content text-gray-700 leading-relaxed text-base md:text-lg whitespace-pre-wrap break-words overflow-auto w-full max-w-full">
 {{ policy.description }}
                 </pre>
               </div>
@@ -106,7 +106,7 @@
                     <div class="inline-flex items-center bg-green-50 text-green-700 px-3 py-1 rounded-md border border-green-500 text-base font-semibold leading-tight">
                       {{ group.label }}
                     </div>
-                    <pre class="mt-2 text-gray-700 text-base leading-relaxed whitespace-pre-wrap break-words overflow-auto w-full max-w-full">
+                    <pre class="policy-content mt-2 text-gray-700 text-base leading-relaxed whitespace-pre-wrap break-words overflow-auto w-full max-w-full">
 {{ formatEligibility(group) }}
                     </pre>
                   </div>
@@ -119,7 +119,7 @@
           <section class="mb-12">
             <h2 class="text-blue-900 mb-6 text-3xl border-l-4 border-blue-500 pl-6">지원 혜택</h2>
             <div class="bg-gradient-to-br from-blue-50 via-cyan-50 to-blue-50 rounded-2xl p-6 md:p-8 border-2 border-blue-200 shadow-inner">
-              <pre class="block w-full text-gray-800 text-base md:text-lg leading-relaxed whitespace-pre-wrap break-words overflow-auto font-sans">
+              <pre class="policy-content block w-full text-gray-800 text-base md:text-lg leading-relaxed whitespace-pre-wrap break-words overflow-auto font-sans">
 {{ displayBenefits }}
               </pre>
             </div>
@@ -309,3 +309,12 @@ const handleWishlistToggle = async () => {
   }
 };
 </script>
+
+<style scoped>
+.policy-content {
+  white-space: pre-wrap;
+  word-break: break-word;
+  overflow-wrap: break-word;
+  max-width: 100%;
+}
+</style>
