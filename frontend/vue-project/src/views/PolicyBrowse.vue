@@ -1,4 +1,4 @@
-﻿<template>
+<template>
   <div class="min-h-screen">
     <div class="max-w-[1400px] mx-auto px-8 lg:px-12 py-12">
       <div class="mb-12">
