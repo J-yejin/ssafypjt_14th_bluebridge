@@ -3,15 +3,12 @@
     <!-- Hero -->
     <section class="hero">
       <div class="hero-left card">
-        <h1>
-          청년 정책 한눈에<br />
-          맞춤 추천까지
-        </h1>
+        <h1>한눈에 보는 청년 정책<br />맞춤 추천까지 받아보세요</h1>
         <p class="body">
           조건에 맞는 정책을 빠르게 찾아보고<br />
-          신청 기간도 놓치지 마세요.
+          신청 기한까지 놓치지 마세요.
         </p>
-        <img src="/feature-home-big.png" alt="청년 정책 허브" class="hero-illustration" />
+        <img src="/feature-home-big.png" alt="정책 브리핑" class="hero-illustration" />
         <div class="actions">
           <button class="btn primary" @click="goRecommend">맞춤 추천 받기</button>
           <button class="btn ghost" @click="goBrowse">정책 둘러보기</button>
@@ -24,7 +21,7 @@
           <div class="notice-header">
             <p class="eyebrow">즐겨찾기 일정</p>
             <h4>{{ currentYear }}년 {{ currentMonth }}월</h4>
-            <p class="date">즐겨찾기한 정책의 신청 기간을 달력에 표시합니다</p>
+            <p class="date">즐겨찾기한 정책의 신청 기간을 확인하세요.</p>
           </div>
           <div class="notice-calendar" aria-label="즐겨찾기 일정 달력">
             <div class="calendar-header">
@@ -33,7 +30,7 @@
               <button class="nav-btn" @click="changeMonth(1)">›</button>
               <span class="calendar-legend">
                 <span class="calendar-dot" aria-hidden="true"></span>
-                신청 일정
+                일정
               </span>
             </div>
             <div class="weekday-row">
@@ -77,41 +74,16 @@
     <!-- Feature highlights -->
     <section class="features">
       <div class="section-title">
-        <h2>한눈에 보는 청년 정책</h2>
+        <h2>한눈에 보는 정책</h2>
         <p>분야별로 빠르게 살펴보고, 맞춤 추천까지 받아보세요.</p>
       </div>
       <div class="feature-grid">
-        <div
-          v-for="card in featureCards"
-          :key="card.title"
-          class="card feature"
-          :class="card.className"
-        >
+        <div v-for="card in featureCards" :key="card.title" class="card feature" :class="card.className">
           <img v-if="card.image" :src="card.image" :alt="card.title" class="feature-img" />
           <div v-else class="icon">{{ card.fallback }}</div>
           <h3>{{ card.title }}</h3>
           <p>{{ card.desc }}</p>
         </div>
-      </div>
-    </section>
-
-    <!-- Banner CTAs -->
-    <section class="banners">
-      <div class="banner card">
-        <div>
-          <p class="eyebrow">미리 체험해보기</p>
-          <h3>정책 브리프 맛보기</h3>
-          <p>관심분야를 선택하면 샘플 브리프를 보여드립니다.</p>
-        </div>
-        <button class="btn primary" @click="goBrowse">브리프 보기</button>
-      </div>
-      <div class="banner card">
-        <div>
-          <p class="eyebrow">신청 바로가기</p>
-          <h3>정책 링크 모아보기</h3>
-          <p>지역과 분야를 고르면 바로 신청 링크를 확인할 수 있어요.</p>
-        </div>
-        <button class="btn ghost" @click="goBrowse">신청 링크 보기</button>
       </div>
     </section>
 
@@ -122,87 +94,41 @@
         <p>카테고리별로 맞춤 정책을 빠르게 탐색하세요.</p>
       </div>
       <div class="partner-grid">
-        <div class="partner-tile">
-          <div class="bubble mint">💼</div>
-          <span>취업·창업</span>
-        </div>
-        <div class="partner-tile">
-          <div class="bubble blue">🏠</div>
-          <span>주거·생활</span>
-        </div>
-        <div class="partner-tile">
-          <div class="bubble sand">🎓</div>
-          <span>교육·훈련</span>
-        </div>
-        <div class="partner-tile">
-          <div class="bubble coral">🩺</div>
-          <span>복지·법률</span>
-        </div>
-        <div class="partner-tile">
-          <div class="bubble purple">💰</div>
-          <span>금융·지원금</span>
-        </div>
-        <div class="partner-tile">
-          <div class="bubble gray">✨</div>
-          <span>기타</span>
+        <div class="partner-tile" v-for="cat in categories" :key="cat.label">
+          <div class="bubble" :class="cat.className">{{ cat.icon }}</div>
+          <span>{{ cat.label }}</span>
         </div>
       </div>
     </section>
 
-    <!-- Info grid -->
+    <!-- Info grid: boards 연동 -->
     <section class="info-grid">
       <div class="card list-card">
         <div class="list-header">
           <h3>공지사항</h3>
-          <a href="#">더보기</a>
+          <button class="link-btn" @click="goBoardCategory('notice')">더보기</button>
         </div>
         <ul>
-          <li>
-            <span>정책 업데이트 안내</span>
-            <span class="date">2025.03.01</span>
+          <li v-for="item in noticeList" :key="item.id">
+            <span>{{ item.title }}</span>
+            <span class="date">{{ formatDate(item.created_at) }}</span>
           </li>
-          <li>
-            <span>맞춤 추천 배포</span>
-            <span class="date">2025.02.20</span>
-          </li>
-          <li>
-            <span>서비스 개선 안내</span>
-            <span class="date">2025.02.05</span>
-          </li>
+          <li v-if="!noticeList.length" class="empty">등록된 공지사항이 없습니다.</li>
         </ul>
       </div>
 
       <div class="card list-card">
         <div class="list-header">
           <h3>자료실</h3>
-          <a href="#">더보기</a>
+          <button class="link-btn" @click="goBoardCategory('review')">더보기</button>
         </div>
         <ul>
-          <li>
-            <span>정책 신청 체크리스트</span>
-            <span class="tag">PDF</span>
+          <li v-for="item in resourceList" :key="item.id">
+            <span>{{ item.title }}</span>
+            <span class="date">{{ formatDate(item.created_at) }}</span>
           </li>
-          <li>
-            <span>연령·소득 가이드</span>
-            <span class="tag">XLSX</span>
-          </li>
-          <li>
-            <span>지역별 지원 요약</span>
-            <span class="tag">PDF</span>
-          </li>
+          <li v-if="!resourceList.length" class="empty">등록된 자료가 없습니다.</li>
         </ul>
-      </div>
-
-      <div class="card contact">
-        <div>
-          <p class="eyebrow">고객센터</p>
-          <h3>1577-5500</h3>
-          <p class="body">평일 09:00 ~ 17:45 (주말·공휴일 휴무)</p>
-        </div>
-        <div class="contact-actions">
-          <button class="btn ghost small">1:1 문의</button>
-          <button class="btn primary small">FAQ</button>
-        </div>
       </div>
     </section>
   </div>
@@ -213,10 +139,12 @@ import { ref, computed, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
 import { usePolicyStore } from '../stores/policyStore';
 import { useAuthStore } from '../stores/authStore';
+import { useBoardStore } from '../stores/boardStore';
 
 const router = useRouter();
 const policyStore = usePolicyStore();
 const authStore = useAuthStore();
+const boardStore = useBoardStore();
 
 const goBrowse = () => router.push('/browse');
 const goRecommend = () => router.push('/recommend');
@@ -233,11 +161,11 @@ const wishlistPolicies = computed(() =>
   policyStore.policies.filter((p) => policyStore.isWishlisted(p.id))
 );
 
-// 정책 일정(기간 있음)
+// 달력 이벤트 (기간 있음)
 const calendarPolicies = computed(() => {
   const normalize = (list = []) =>
     list
-      .filter((p) => p.startDate && p.endDate) // 양쪽 날짜 모두 있을 때만 달력에 표시
+      .filter((p) => p.startDate && p.endDate)
       .map((p) => ({
         title: p.title,
         startDate: p.startDate,
@@ -253,7 +181,7 @@ const calendarPolicies = computed(() => {
   });
 });
 
-// 상시 모집(기간 없음)
+// 상시 모집 (기간 없음)
 const openEndedEvents = computed(() => {
   const isAlways = (p) => !p.startDate && !p.endDate;
   const combined = [
@@ -318,8 +246,32 @@ const changeMonth = (delta) => {
   currentDate.value = d;
 };
 
+// 게시판 연동
+const noticeList = computed(() =>
+  (boardStore.boards || [])
+    .filter((b) => b.category === 'notice')
+    .sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
+    .slice(0, 3)
+);
+
+const resourceList = computed(() =>
+  (boardStore.boards || [])
+    .filter((b) => b.category === 'review')
+    .sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
+    .slice(0, 3)
+);
+
+const goBoardCategory = (cat) => {
+  router.push({ path: '/boards', query: { category: cat } });
+};
+
+const formatDate = (value) => {
+  if (!value) return '';
+  return new Date(value).toLocaleDateString();
+};
+
 onMounted(async () => {
-  // 캐시 로드
+  // 캘린더 캐시 로드
   try {
     const cached = JSON.parse(localStorage.getItem('bb_calendar_cache') || '[]');
     if (Array.isArray(cached)) cachedPolicies.value = cached;
@@ -341,6 +293,9 @@ onMounted(async () => {
     localStorage.setItem('bb_calendar_cache', JSON.stringify(toCache));
     cachedPolicies.value = toCache;
   }
+
+  policyStore.loadPolicies({ force: true });
+  boardStore.loadBoards();
 });
 
 const featureCards = [
@@ -349,22 +304,31 @@ const featureCards = [
     desc: '취업·주거·교육·금융 정책을 한 곳에.',
     className: 'mint',
     image: '/feature-org.png',
-    fallback: '🏢',
+    fallback: '🏛️',
   },
   {
     title: '신청 기간 캘린더',
-    desc: '신청 마감 전에 알림을 받아보세요.',
+    desc: '신청 마감 전 알림을 받아보세요.',
     className: 'sand',
     image: '/feature-calendar.png',
-    fallback: '🗓',
+    fallback: '🗓️',
   },
   {
     title: '맞춤 추천',
-    desc: '프로필 기반으로 꼭 맞는 정책 찾기.',
+    desc: '프로필 기반으로 꼭 맞는 정책 추천.',
     className: 'purple',
     image: '/feature-recommend.png',
     fallback: '✨',
   },
+];
+
+const categories = [
+  { label: '취업·창업', icon: '👩‍💼', className: 'mint' },
+  { label: '주거·생활', icon: '🏠', className: 'blue' },
+  { label: '교육·훈련', icon: '🎓', className: 'sand' },
+  { label: '복지·법률', icon: '❤️', className: 'coral' },
+  { label: '금융·지원금', icon: '💰', className: 'purple' },
+  { label: '기타', icon: '⭐', className: 'gray' },
 ];
 </script>
 
@@ -824,8 +788,11 @@ const featureCards = [
 
 .info-grid {
   display: grid;
-  grid-template-columns: 2fr 2fr 1.4fr;
+  grid-template-columns: repeat(2, minmax(280px, 1fr));
   gap: 12px;
+  max-width: 920px;
+  margin: 0 auto;
+  justify-content: center;
 }
 
 .list-card {
