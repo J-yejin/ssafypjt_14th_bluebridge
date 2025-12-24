@@ -107,6 +107,10 @@ class PolicyBasicSerializer(serializers.ModelSerializer):
     ux_score = serializers.IntegerField(read_only=True, default=None)
     profile_score = serializers.FloatField(read_only=True, default=None)
     query_similarity = serializers.FloatField(read_only=True, default=None)
+    similarity_score_10 = serializers.FloatField(read_only=True, default=None)
+    profile_score_10 = serializers.FloatField(read_only=True, default=None)
+    policy_target_required = serializers.SerializerMethodField()
+    policy_target_match = serializers.SerializerMethodField()
     detail_link = serializers.SerializerMethodField()
 
     class Meta:
@@ -123,6 +127,10 @@ class PolicyBasicSerializer(serializers.ModelSerializer):
             "ux_score",
             "profile_score",
             "query_similarity",
+            "similarity_score_10",
+            "profile_score_10",
+            "policy_target_required",
+            "policy_target_match",
             "detail_link",
         ]
 
@@ -131,6 +139,12 @@ class PolicyBasicSerializer(serializers.ModelSerializer):
         if isinstance(links, list) and links:
             return links[0]
         return None
+
+    def get_policy_target_required(self, obj):
+        return getattr(obj, "policy_target_required", False)
+
+    def get_policy_target_match(self, obj):
+        return getattr(obj, "policy_target_match", None)
 
 
 class WishlistCreateSerializer(serializers.ModelSerializer):

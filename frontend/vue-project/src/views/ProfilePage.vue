@@ -69,7 +69,7 @@
         <!-- Special targets -->
         <div class="p-8 bg-gradient-to-br from-blue-50 to-cyan-50 rounded-2xl border border-blue-100">
           <label class="block text-gray-700 mb-3 text-lg">
-            지원대상 <span class="text-red-500">*</span>
+            정책 대상 <span class="text-red-500">*</span>
             <span class="text-gray-500 ml-3">(중복 선택 가능)</span>
           </label>
           <div class="flex flex-wrap gap-4">

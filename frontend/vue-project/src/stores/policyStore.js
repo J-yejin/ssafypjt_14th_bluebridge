@@ -136,7 +136,7 @@ const transformPolicy = (p) => {
     { label: '취업·직업', values: p.employment_requirements || p.employment || [] },
     { label: '학력', values: p.education_requirements || p.education || [] },
     { label: '전공', values: p.major_requirements || p.major || [] },
-    { label: '지원대상', values: p.special_target || [] },
+    { label: '정책 대상', values: p.special_target || [] },
   ];
 
   const eligibility = eligibilitySections.flatMap((section) => {
