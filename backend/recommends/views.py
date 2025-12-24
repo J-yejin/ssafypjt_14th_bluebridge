@@ -8,10 +8,12 @@ from policies.serializers import PolicyBasicSerializer
 from profiles.models import Profile
 from .engine import (
     fetch_policies_by_ids,
+    build_reason,
     search_with_chroma,
     rerank_with_profile,
     assign_ux_scores,
     select_top3_with_reasons,
+    _tokenize_query,
 )
 from .models import RecommendationLog
 
@@ -77,10 +79,26 @@ def recommend_list(request):
     profile, _ = Profile.objects.get_or_create(user=request.user)
     query_text = _build_profile_query(profile) or "맞춤 정책 추천"
 
-    policy_ids, scores = search_with_chroma(query_text=query_text, profile=profile, top_k=10)
+    policy_ids, scores, combined_query, query_categories, query_employment = search_with_chroma(
+        query_text=query_text, profile=profile, top_k=10
+    )
     policies = fetch_policies_by_ids(policy_ids)
+    query_tokens = _tokenize_query(combined_query)
+    if query_categories:
+        query_tokens.extend(list(query_categories))
+    if query_employment:
+        query_tokens.extend(list(query_employment))
     # 프로필 피드: 프로필 점수 중심으로 정렬 (쿼리 유사도 영향 최소화)
-    reranked = rerank_with_profile(policies, scores, profile, weight_profile=1.0, weight_similarity=0.0)
+    reranked = rerank_with_profile(
+        policies,
+        scores,
+        profile,
+        query_tokens=query_tokens,
+        query_categories=query_categories,
+        query_employment=query_employment,
+        weight_profile=1.0,
+        weight_similarity=0.0,
+    )
     reranked = assign_ux_scores(reranked)
 
     dist_map = {pid: dist for pid, dist in zip(policy_ids, scores)}
@@ -129,10 +147,26 @@ def recommend_detail(request):
 
     profile, _ = Profile.objects.get_or_create(user=request.user)
     # 더 넓은 후보(최대 50개)에서 유사도 중심으로 상위 10 추려서 사용
-    policy_ids, scores = search_with_chroma(query_text=query, profile=profile, top_k=50)
+    policy_ids, scores, combined_query, query_categories, query_employment = search_with_chroma(
+        query_text=query, profile=profile, top_k=50
+    )
     policies = fetch_policies_by_ids(policy_ids)
+    query_tokens = _tokenize_query(combined_query)
+    if query_categories:
+        query_tokens.extend(list(query_categories))
+    if query_employment:
+        query_tokens.extend(list(query_employment))
     # 검색 모드: 유사도 우선(0.9), 프로필 보조(0.1)
-    reranked = rerank_with_profile(policies, scores, profile, weight_profile=0.1, weight_similarity=0.9)
+    reranked = rerank_with_profile(
+        policies,
+        scores,
+        profile,
+        query_tokens=query_tokens,
+        query_categories=query_categories,
+        query_employment=query_employment,
+        weight_profile=0.1,
+        weight_similarity=0.9,
+    )
     reranked = assign_ux_scores(reranked)
     reranked = reranked[:10]
 
@@ -149,6 +183,7 @@ def recommend_detail(request):
                 "id": p.id,
                 "title": p.title,
                 "ux_score": getattr(p, "ux_score", None),
+                "final_score": getattr(p, "hybrid_score", None),
                 "similarity_score_10": getattr(p, "similarity_score_10", None),
                 "profile_score_10": getattr(p, "profile_score_10", None),
                 "policy_target_required": getattr(p, "policy_target_required", False),
@@ -158,21 +193,28 @@ def recommend_detail(request):
         )
 
     try:
+        ux_scores = {}
+        recommended_ids = []
+        for rank, p in enumerate(reranked, start=1):
+            scores = getattr(p, "score_components", {}) or {}
+            ux_scores[str(p.id)] = {
+                "rank": rank,
+                "final_score": getattr(p, "hybrid_score", None),
+                "scores": {
+                    "semantic": scores.get("semantic"),
+                    "intent": scores.get("intent"),
+                    "eligibility": scores.get("eligibility"),
+                },
+                "reason": build_reason(scores),
+            }
+            recommended_ids.append(p.id)
+
         RecommendationLog.objects.create(
             user=request.user,
             query=query,
             profile_snapshot=_profile_snapshot(profile),
-            recommended_policy_ids=[p.id for p in reranked],
-            ux_scores={
-                str(p.id): {
-                    "ux": getattr(p, "ux_score", None),
-                    "sim10": getattr(p, "similarity_score_10", None),
-                    "profile10": getattr(p, "profile_score_10", None),
-                    "policy_target_required": getattr(p, "policy_target_required", False),
-                    "policy_target_match": getattr(p, "policy_target_match", None),
-                }
-                for p in reranked
-            },
+            recommended_policy_ids=recommended_ids,
+            ux_scores=ux_scores,
         )
     except Exception:
         pass

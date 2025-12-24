@@ -1,7 +1,8 @@
 ﻿import os
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Set
 
 import math
+import re
 import requests
 from django.conf import settings
 from django.db.models import Q
@@ -11,7 +12,7 @@ from policies.models import Policy
 from profiles.models import Profile
 from policies.services.explanation_ai import generate_top3_with_reasons
 from policies.services.normalize_ai import normalize_query
-from policies.services.query_expand_ai import expand_query
+from policies.services.query_expand_ai import expand_query, expand_query_with_llm
 from policies.services import vector_db
 
 # collection config
@@ -35,6 +36,15 @@ def _get_gms_key() -> str:
     if not key:
         raise RecommendEngineError("GMS_KEY is not configured")
     return key
+
+
+def _norm(val):
+    """
+    Normalize scalar values to align with Chroma metadata rules.
+    """
+    if val is None:
+        return None
+    return str(val).strip().lower()
 
 
 def get_chroma_collection():
@@ -73,19 +83,25 @@ def embed_texts(texts: List[str], mode: str = "document") -> List[List[float]]:
     return embeddings
 
 
-def build_embedding_text(policy: Policy, max_chars: int = 3500) -> str:
+def build_embedding_text(policy: Policy) -> str:
     """
-    임베딩 입력을 summary 중심으로 구성하고 title은 보조로 둡니다.
+    임베딩은 '누구에게 어떤 지원을 하는 정책인가'에 집중: search_summary 중심, title 보조, detail은 짧게.
     """
-    parts = []
-    if policy.summary:
-        parts.append(policy.summary)
+    texts = []
+
+    # 1) 최우선: search_summary
+    if getattr(policy, "search_summary", None):
+        texts.append(policy.search_summary.strip())
+
+    # 2) title 보조
     if policy.title:
-        parts.append(policy.title)
+        texts.append(policy.title.strip())
+
+    # 3) detail은 아주 짧게만
     if policy.policy_detail:
-        parts.append(policy.policy_detail)
-    text = "\n".join([p for p in parts if p])
-    return text[:max_chars]
+        texts.append(policy.policy_detail[:300].strip())
+
+    return " ".join(texts)
 
 
 def build_where_filter(profile: Optional[Profile]) -> Dict:
@@ -93,15 +109,26 @@ def build_where_filter(profile: Optional[Profile]) -> Dict:
     Use lightweight filter focused on region only.
     Other profile signals move to scoring to avoid over-filtering.
     """
-    if profile is None or not profile.region:
+    if profile is None:
         return {}
 
-    return {
-        "$or": [
-            {"region_scope": "nationwide"},
-            {"region_sido": profile.region.lower()},
+    profile_region_scope = _norm(getattr(profile, "region_scope", None))
+    profile_sido = _norm(getattr(profile, "region_sido", None) or getattr(profile, "region", None))
+
+    where_filter: Dict = {}
+
+    # region_scope
+    if profile_region_scope:
+        where_filter["region_scope"] = profile_region_scope
+
+    # region_sido (LOCAL 정책일 때)
+    if profile_region_scope == "local" and profile_sido:
+        where_filter["$or"] = [
+            {"region_sido": profile_sido},
+            {"applicable_regions": {"$contains": profile_sido}},
         ]
-    }
+
+    return where_filter
 
 
 def _fallback_db_search(query_text: str, limit: int = 10) -> List[Policy]:
@@ -127,12 +154,18 @@ def search_with_chroma(
     top_k: int = 10,
 ):
     """
-    RAG search: normalize/expand -> embed -> Chroma query.
+    RAG search: normalize -> LLM 확장 -> embed -> Chroma query.
     Fallbacks: (1) drop where filter, (2) DB LIKE search.
     """
     normalized = normalize_query(query_text)
-    expanded_list = expand_query(normalized)
-    combined_query = " ".join(expanded_list) if expanded_list else normalized
+    llm_expanded = expand_query_with_llm(normalized)
+    expanded_query = llm_expanded.get("expanded_query", normalized) or normalized
+    query_filters = llm_expanded.get("filters", {}) or {}
+    query_categories = set(_norm_list(query_filters.get("category", [])))
+    query_employment = set(_norm_list(query_filters.get("employment", [])))
+
+    expanded_list = expand_query(expanded_query)
+    combined_query = " ".join(expanded_list) if expanded_list else expanded_query
 
     where_filter = build_where_filter(profile)
 
@@ -162,7 +195,7 @@ def search_with_chroma(
         policy_ids = [p.id for p in fallback_policies]
         scores = [0.0 for _ in policy_ids]
 
-    return policy_ids, scores
+    return policy_ids, scores, combined_query, query_categories, query_employment
 
 
 def fetch_policies_by_ids(policy_ids: List[int]) -> List[Policy]:
@@ -175,9 +208,99 @@ def fetch_policies_by_ids(policy_ids: List[int]) -> List[Policy]:
 def _safe_list(val) -> List[str]:
     if not val:
         return []
-    if isinstance(val, list):
-        return val
+    if isinstance(val, (list, tuple, set)):
+        return list(val)
     return [val]
+
+
+def _norm_list(val) -> List[str]:
+    return [v for v in (_norm(x) for x in _safe_list(val)) if v]
+
+
+def _tokenize_query(text: str) -> List[str]:
+    if not text:
+        return []
+    tokens = []
+    for part in re.split("[\\s\\|,;/]+", text.lower()):
+        t = part.strip()
+        if t:
+            tokens.append(t)
+    return tokens
+
+
+def intent_score(
+    policy: Policy,
+    query_tokens: List[str],
+    query_categories: Optional[Set[str]] = None,
+    query_employment: Optional[Set[str]] = None,
+) -> float:
+    if not query_tokens and not query_categories and not query_employment:
+        return 0.0
+    tokens_set = set(query_tokens or [])
+    if query_categories:
+        tokens_set.update(_norm_list(list(query_categories)))
+    if query_employment:
+        tokens_set.update(_norm_list(list(query_employment)))
+    score = 0.0
+    category = _norm(getattr(policy, "category", None))
+    if category and category in tokens_set:
+        score += 0.6
+    keywords = _norm_list(getattr(policy, "keywords", []))
+    if keywords:
+        matched = sum(1 for k in keywords if k in tokens_set)
+        score += min(0.4, matched * 0.1)
+    return min(score, 1.0)
+
+
+def eligibility_score(policy: Policy, profile: Optional[Profile]) -> float:
+    """
+    Soft eligibility check with region scope/sido.
+    """
+    if not profile:
+        return 1.0
+    score = 1.0
+    policy_region_scope = _norm(getattr(policy, "region_scope", None))
+    profile_sido = _norm(getattr(profile, "region_sido", None) or getattr(profile, "region", None))
+
+    if policy_region_scope == "local" and profile_sido:
+        applicable = set(_norm_list(getattr(policy, "applicable_regions", None)))
+        if applicable and profile_sido not in applicable:
+            score -= 0.3
+
+    return max(score, 0.0)
+
+
+def build_reason(score_log: Dict[str, float]) -> str:
+    """
+    규칙 기반 추천 이유 생성 (LLM 없이 사용).
+    """
+    semantic = score_log.get("semantic", 0.0)
+    intent = score_log.get("intent", 0.0)
+    eligibility = score_log.get("eligibility", 0.0)
+
+    if intent >= 0.9:
+        return "입력하신 관심 분야와 가장 잘 맞는 정책이에요."
+    if eligibility < 0.7:
+        return "조건은 일부만 충족하지만 참고할 만한 정책이에요."
+    if semantic >= 0.8:
+        return "정책 설명과 목적이 현재 상황과 잘 맞아요."
+    return "전반적인 조건과 정책 목적이 균형 있게 맞아요."
+
+
+def apply_diversity(policies: List[Policy], max_per_category: int = 2) -> List[Policy]:
+    """
+    Limit the number of recommendations per category to avoid over-clustering.
+    """
+    bucket: Dict[str, int] = {}
+    final: List[Policy] = []
+    for policy in policies:
+        cat = _norm(getattr(policy, "category", None)) or "etc"
+        count = bucket.get(cat, 0)
+        if count >= max_per_category:
+            continue
+        bucket[cat] = count + 1
+        final.append(policy)
+    return final
 
 # 정책 대상(강제 필터링) 키워드 목록
 POLICY_TARGET_FORCE_KEYS = {
@@ -214,6 +337,19 @@ def _requires_policy_target(targets: List[str]) -> bool:
     return False
 
 
+def _special_target_match(policy_targets: List[str], profile_targets: List[str]) -> bool:
+    """
+    Hard cut: 정책 특수대상이 있으면 프로필도 해당 대상이 있어야 통과.
+    """
+    policy_set = set(_norm_list(policy_targets))
+    profile_set = set(_norm_list(profile_targets))
+    if not policy_set:
+        return True
+    if not profile_set:
+        return False
+    return bool(policy_set.intersection(profile_set))
+
+
 def _gender_mismatch(policy_targets: List[str], profile_gender: Optional[str]) -> bool:
     """
     정책 특수대상에 성별 키워드가 있으면 프로필 성별과 불일치 시 True.
@@ -237,54 +373,71 @@ def profile_match_score(policy: Policy, profile: Optional[Profile]) -> float:
     score = 0.0
     penalties = 0.0
 
+    profile_region_scope = _norm(getattr(profile, "region_scope", None))
+    profile_sido = _norm(getattr(profile, "region_sido", None) or getattr(profile, "region", None))
+    profile_employment_status = _norm(getattr(profile, "employment_status", None))
+    profile_major = _norm(getattr(profile, "major", None))
+    profile_special_targets = _norm_list(getattr(profile, "special_targets", None))
+    profile_income_quintile = _norm(getattr(profile, "income_quintile", None))
+    profile_education_level = _norm(getattr(profile, "education_level", None))
+    profile_interest = _norm(getattr(profile, "interest", None))
+
+    policy_region_scope = _norm(getattr(policy, "region_scope", None))
+    policy_region_sido = _norm(getattr(policy, "region_sido", None))
+
     # region weight reduced
-    if profile.region:
-        if policy.region_scope and policy.region_scope.upper() == "NATIONWIDE":
+    if profile_region_scope or profile_sido:
+        if policy_region_scope == "nationwide":
             score += 0.2
-        if policy.region_sido and policy.region_sido.lower() == profile.region.lower():
+        if policy_region_sido and profile_sido and policy_region_sido == profile_sido:
             score += 0.5
         if getattr(policy, "applicable_regions", None):
             try:
-                if profile.region in policy.applicable_regions:
+                normalized_regions = {
+                    r for r in (_norm(r) for r in getattr(policy, "applicable_regions", [])) if r
+                }
+                if profile_sido and profile_sido in normalized_regions:
                     score += 0.8
             except Exception:
                 pass
 
     # employment / major / special target
-    if profile.employment_status and policy.employment:
-        if profile.employment_status in _safe_list(policy.employment):
-            score += 0.6
+    policy_employment = set(_norm_list(policy.employment))
+    if profile_employment_status and policy_employment and profile_employment_status in policy_employment:
+        score += 0.6
 
-    if profile.major and policy.major:
-        if profile.major in _safe_list(policy.major):
-            score += 0.8
+    policy_major = set(_norm_list(policy.major))
+    if profile_major and policy_major and profile_major in policy_major:
+        score += 0.8
 
-    if profile.special_targets and policy.special_target:
-        intersect = set(profile.special_targets).intersection(set(_safe_list(policy.special_target)))
+    policy_special_targets = set(_norm_list(policy.special_target))
+    profile_special_targets_set = set(profile_special_targets)
+    if profile_special_targets_set and policy_special_targets:
+        intersect = policy_special_targets.intersection(profile_special_targets_set)
         if intersect:
             score += 0.8
-        elif _requires_policy_target(_safe_list(policy.special_target)):
+        elif _requires_policy_target(list(policy_special_targets)):
             penalties += 1.0
     # 정책에 강제 매칭 특수대상이 있는데 프로필에 없음 -> 패널티
-    if policy.special_target and not profile.special_targets:
-        if _requires_policy_target(_safe_list(policy.special_target)):
+    if policy_special_targets and not profile_special_targets_set:
+        if _requires_policy_target(list(policy_special_targets)):
             penalties += 0.8
 
     # income_quintile / education_level 일부 반영
-    if profile.income_quintile and policy.special_target:
-        if profile.income_quintile in _safe_list(policy.special_target):
+    if profile_income_quintile and policy_special_targets:
+        if profile_income_quintile in policy_special_targets:
             score += 0.3
-    if profile.education_level and policy.education:
-        if profile.education_level in _safe_list(policy.education):
-            score += 0.4
+    policy_education = set(_norm_list(policy.education))
+    if profile_education_level and policy_education and profile_education_level in policy_education:
+        score += 0.4
 
     # interest -> keywords/service_type match
-    if profile.interest:
-        keywords = _safe_list(getattr(policy, "keywords", []))
-        category = getattr(policy, "category", None)
-        if any(profile.interest in str(k) for k in keywords):
+    if profile_interest:
+        keywords = _norm_list(getattr(policy, "keywords", []))
+        category = _norm(getattr(policy, "category", None))
+        if any(profile_interest in k for k in keywords):
             score += 1.0
-        if category and profile.interest in str(category):
+        if category and profile_interest in category:
             score += 0.6
 
     # age soft check
@@ -312,47 +465,52 @@ def rerank_with_profile(
     policies: List[Policy],
     distances: List[float],
     profile: Optional[Profile],
+    query_tokens: Optional[List[str]] = None,
+    query_categories: Optional[Set[str]] = None,
+    query_employment: Optional[Set[str]] = None,
     weight_profile: float = 0.4,
     weight_similarity: float = 0.6,
 ) -> List[Policy]:
     """Hybrid rerank with higher emphasis on query similarity."""
     scored = []
+    q_tokens = query_tokens or []
     for policy, dist in zip(policies, distances):
-        # 정책 대상(강제 필터) 불일치 시 제외
-        policy_targets = {str(t).strip().lower() for t in _safe_list(getattr(policy, "special_target", []))}
-        requires_match = _requires_policy_target(policy_targets)
-        policy.policy_target_required = requires_match
-        policy.policy_target_match = None
-
-        if requires_match:
-            if not profile or not getattr(profile, "special_targets", None):
-                policy.policy_target_match = False
-                continue
-            profile_targets = {str(t).strip().lower() for t in (profile.special_targets or [])}
-            intersects = policy_targets.intersection(profile_targets)
-            policy.policy_target_match = bool(intersects)
-            if not policy.policy_target_match:
-                continue
-        else:
-            policy.policy_target_match = True
-
-        # 성별 지정 정책인데 프로필 성별 불일치 -> 제외
-        if profile and _gender_mismatch(list(policy_targets), getattr(profile, "gender", None)):
+        # 정책 대상(강제 필터) 불일치 시 제외 (하드 컷)
+        policy_targets = set(_norm_list(getattr(policy, "special_target", [])))
+        profile_targets = set(_norm_list(getattr(profile, "special_targets", None))) if profile else set()
+        policy.policy_target_required = bool(policy_targets)
+        policy.policy_target_match = _special_target_match(list(policy_targets), list(profile_targets))
+        if not policy.policy_target_match:
             continue
 
-        sim = 1.0 / (1.0 + dist) if dist is not None else 0.0
-        pscore = profile_match_score(policy, profile)
+        # 성별 지정 정책인데 프로필 성별 불일치 -> 제외
+        profile_gender = _norm(getattr(profile, "gender", None)) if profile else None
+        if profile and _gender_mismatch(list(policy_targets), profile_gender):
+            continue
 
-        policy.similarity_score_10 = _to_score_10(sim, 1.0)
-        policy.profile_score_10 = _to_score_10(max(pscore, 0.0), PROFILE_SCORE_MAX)
-        hybrid = weight_profile * pscore + weight_similarity * sim
-        policy.profile_score = pscore
-        policy.query_similarity = sim
-        policy.hybrid_score = hybrid
-        scored.append((hybrid, policy))
+        semantic = 1.0 - dist if dist is not None else 0.0
+        semantic = max(0.0, min(1.0, semantic))
+        intent = intent_score(policy, q_tokens, query_categories, query_employment)
+        eligibility = eligibility_score(policy, profile)
+
+        final_score = (0.5 * semantic) + (0.3 * intent) + (0.2 * eligibility)
+
+        policy.score_components = {
+            "semantic": semantic,
+            "intent": intent,
+            "eligibility": eligibility,
+        }
+        policy.similarity_score_10 = _to_score_10(semantic, 1.0)
+        policy.profile_score_10 = _to_score_10(eligibility, 1.0)
+        policy.query_similarity = semantic
+        policy.profile_score = eligibility
+        policy.hybrid_score = final_score
+        scored.append((final_score, policy))
 
     scored.sort(key=lambda x: x[0], reverse=True)
-    return [p for _, p in scored]
+    ordered = [p for _, p in scored]
+    diversified = apply_diversity(ordered)
+    return diversified
 
 
 def assign_ux_scores(policies: List[Policy]) -> List[Policy]:

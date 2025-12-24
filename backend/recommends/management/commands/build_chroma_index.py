@@ -97,6 +97,7 @@ class Command(BaseCommand):
 
                 meta_raw = {
                     "policy_type": _normalize_meta_value(p.policy_type),
+                    "category": _normalize_meta_value(p.category),
                     "region_scope": _normalize_meta_value(p.region_scope),
                     "region_sido": _normalize_meta_value(p.region_sido),
                     "applicable_regions": _normalize_meta_value(getattr(p, "applicable_regions", None)),
