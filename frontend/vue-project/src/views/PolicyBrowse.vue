@@ -14,22 +14,22 @@
             <input
               type="text"
               placeholder="정책명이나 키워드를 입력하세요"
-              v-model="searchTerm"
+              v-model="browseState.searchTerm"
               class="w-full pl-14 pr-12 py-4 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-lg"
             />
             <button
-              v-if="searchTerm"
-              @click="searchTerm = ''"
+              v-if="browseState.searchTerm"
+              @click="browseState.searchTerm = ''"
               class="absolute right-4 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
             >
               <X class="w-6 h-6" />
             </button>
           </div>
           <button
-            @click="showFilters = !showFilters"
+            @click="browseState.showFilters = !browseState.showFilters"
             :class="[
               'flex items-center gap-3 px-8 py-4 rounded-xl transition-all text-lg',
-              showFilters ? 'bg-blue-600 text-white shadow-lg' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+              browseState.showFilters ? 'bg-blue-600 text-white shadow-lg' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
             ]"
           >
             <Filter :size="20" />
@@ -38,11 +38,11 @@
         </div>
 
         <!-- 필터 -->
-        <div v-if="showFilters" class="mt-8 pt-8 border-t-2 border-gray-100 grid lg:grid-cols-3 gap-6">
+        <div v-if="browseState.showFilters" class="mt-8 pt-8 border-t-2 border-gray-100 grid lg:grid-cols-3 gap-6">
           <div>
             <label class="block text-gray-700 mb-3 text-lg">카테고리</label>
             <select
-              v-model="selectedCategory"
+              v-model="browseState.selectedCategory"
               class="w-full px-5 py-3.5 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-lg"
             >
               <option v-for="cat in categories" :key="cat.value" :value="cat.value">
@@ -54,7 +54,7 @@
           <div>
             <label class="block text-gray-700 mb-3 text-lg">지역</label>
             <select
-              v-model="selectedRegion"
+              v-model="browseState.selectedRegion"
               class="w-full px-5 py-3.5 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-lg"
             >
               <option v-for="region in regions" :key="region.value" :value="region.value">
@@ -66,7 +66,7 @@
           <div>
             <label class="block text-gray-700 mb-3 text-lg">정렬</label>
             <select
-              v-model="sortBy"
+              v-model="browseState.sortBy"
               class="w-full px-5 py-3.5 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-lg"
             >
               <option value="title">제목순</option>
@@ -82,7 +82,7 @@
           총 <span class="text-blue-600">{{ policyStore.pagination?.count || filteredAndSortedPolicies.length }}</span>개의 정책
         </p>
         <button
-          v-if="searchTerm || selectedCategory || selectedRegion"
+          v-if="browseState.searchTerm || browseState.selectedCategory || browseState.selectedRegion"
           @click="resetFilters"
           class="text-blue-600 hover:text-blue-700 flex items-center gap-2 px-4 py-2 hover:bg-blue-50 rounded-lg transition-all"
         >
@@ -159,11 +159,14 @@
 </template>
 
 <script setup>
+import { Search, Filter, X, Heart } from 'lucide-vue-next';
 import { ref, computed, onMounted, watch } from 'vue';
-import { Search, Filter, X } from 'lucide-vue-next';
 import { usePolicyStore } from '../stores/policyStore';
 
 const policyStore = usePolicyStore();
+const authStore = useAuthStore();
+const router = useRouter();
+const browseState = policyStore.browseState;
 const searchTerm = ref('');
 const selectedCategory = ref('');
 const selectedRegion = ref('');
@@ -219,11 +222,39 @@ const loadPage = () => {
 
 onMounted(() => {
   loadPage();
+  if (authStore.isAuthenticated) {
+    policyStore.loadWishlist();
+  }
+});
+
+const toggleWishlist = async (policyId) => {
+  if (!authStore.isAuthenticated) {
+    alert('로그인 후 이용해주세요.');
+    return;
+  }
+  try {
+    await policyStore.toggleWishlist(policyId);
+  } catch (err) {
+    const message = err?.message || '';
+    if (message.toLowerCase().includes('credentials')) {
+      alert('로그인 후 이용해주세요.');
+      return;
+    }
+    alert(message || '관심정책 처리에 실패했습니다.');
+  }
+};
+
+
+onMounted(() => {
+  loadPage();
 });
 
 const filteredAndSortedPolicies = computed(() => policyStore.policies || []);
 
 const resetFilters = () => {
+  browseState.searchTerm = '';
+  browseState.selectedCategory = '';
+  browseState.selectedRegion = '';
   searchTerm.value = '';
   selectedCategory.value = '';
   selectedRegion.value = '';

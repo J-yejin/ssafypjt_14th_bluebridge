@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia';
-import { ref } from 'vue';
+import { ref, reactive } from 'vue';
 import {
   fetchPolicies,
   fetchPolicyById,
@@ -182,6 +182,14 @@ export const usePolicyStore = defineStore('policy', () => {
   const error = ref(null);
   const pagination = ref({ count: 0, next: null, previous: null, page_size: 20 });
   const wishlistIds = ref([]);
+  const hasLoaded = ref(false);
+  const browseState = reactive({
+    searchTerm: '',
+    selectedCategory: '',
+    selectedRegion: '',
+    sortBy: 'title',
+    showFilters: false,
+  });
 
   const setPolicies = (list) => {
     policies.value = list || [];
@@ -189,7 +197,9 @@ export const usePolicyStore = defineStore('policy', () => {
 
   const getById = (id) => policies.value.find((p) => String(p.id) === String(id));
 
-  const loadPolicies = async (filters = {}) => {
+  const loadPolicies = async (filters = {}, options = {}) => {
+    const { force = false } = options;
+    if (hasLoaded.value && !force) return;
     loading.value = true;
     error.value = null;
     try {
@@ -221,6 +231,7 @@ export const usePolicyStore = defineStore('policy', () => {
       }
     } finally {
       loading.value = false;
+      hasLoaded.value = true;
     }
   };
 
@@ -344,6 +355,8 @@ export const usePolicyStore = defineStore('policy', () => {
     policies,
     loading,
     error,
+    hasLoaded,
+    browseState,
     pagination,
     setPolicies,
     getById,
