@@ -1,6 +1,25 @@
 <template>
   <div class="min-h-screen">
-    <div class="max-w-[900px] mx-auto px-8 lg:px-12 py-12">
+    <div v-if="!isLoggedIn" class="min-h-screen flex items-center justify-center">
+      <div class="max-w-2xl mx-auto px-8 lg:px-12">
+        <div class="bg-white rounded-3xl shadow-2xl p-12 text-center">
+          <div class="w-24 h-24 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-6 shadow-lg">
+            <AlertCircle :size="48" class="text-blue-600" />
+          </div>
+          <h2 class="text-blue-900 mb-4 text-3xl">&#47196;&#44536;&#51064;&#51060; &#54596;&#50836;&#54644;&#50836;</h2>
+          <p class="text-gray-600 mb-8 text-lg leading-relaxed">
+            &#45208;&#51032; &#54532;&#47196;&#54596;&#51012; &#48372;&#47140;&#47732; &#47196;&#44536;&#51064; &#54980; &#51060;&#50857;&#54644;&#51452;&#49464;&#50836;.
+          </p>
+          <router-link
+            to="/login"
+            class="inline-flex items-center gap-3 bg-gradient-to-r from-blue-500 to-cyan-500 text-white px-10 py-4 rounded-2xl hover:shadow-2xl transition-all text-lg shadow-lg"
+          >
+            &#47196;&#44536;&#51064;&#54616;&#47084; &#44032;&#44592;
+          </router-link>
+        </div>
+      </div>
+    </div>
+    <div v-else class="max-w-[900px] mx-auto px-8 lg:px-12 py-12">
       <div class="mb-12 text-center">
         <h1 class="text-blue-900 mb-3 text-4xl">&#45208;&#51032; &#54532;&#47196;&#54596;</h1>
         <p class="text-gray-600 text-lg">
@@ -235,13 +254,20 @@
         </div>
 
         <!-- Submit Button -->
-        <div class="flex gap-6 mt-6">
+        <div class="flex flex-col sm:flex-row gap-4 mt-6">
           <button
             type="submit"
             class="flex-1 bg-gradient-to-r from-blue-500 to-cyan-500 text-white px-10 py-5 rounded-2xl hover:shadow-2xl transition-all flex items-center justify-center gap-3 text-lg shadow-lg"
           >
             <Save :size="24" />
-            <span>{{ userStore.isProfileComplete ? '수정하기' : '저장하기' }}</span>
+            <span>{{ userStore.isProfileComplete ? '&#49688;&#51221;&#54616;&#44592;' : '&#49688;&#51221;&#54616;&#44592;' }}</span>
+          </button>
+          <button
+            type="button"
+            @click="handleRecommend"
+            class="flex-1 bg-white border-2 border-blue-500 text-blue-600 px-10 py-5 rounded-2xl hover:bg-blue-50 transition-all flex items-center justify-center gap-3 text-lg shadow-sm"
+          >
+            <span>&#51221;&#52293; &#52628;&#52380; &#48155;&#44592;</span>
           </button>
         </div>
 
@@ -270,10 +296,15 @@
 
 <script setup>
 import { ref, computed, watch, onMounted } from 'vue';
-import { User, Save, CheckCircle2 } from 'lucide-vue-next';
+import { User, Save, CheckCircle2, AlertCircle } from 'lucide-vue-next';
 import { useUserStore } from '../stores/userStore';
+import { useAuthStore } from '../stores/authStore';
+import { useRouter } from 'vue-router';
 
 const userStore = useUserStore();
+const authStore = useAuthStore();
+const router = useRouter();
+const isLoggedIn = computed(() => authStore.isAuthenticated);
 const noneSpecialTarget = 'none';
 
 const cloneProfile = (profile) => {
@@ -319,6 +350,10 @@ const educationOptions = [
 const specialTargetOptions = ['국가유공자', '장애인', '보훈가족', '한부모', '저소득층', '다자녀', '군인·전역예정', '농어업인'];
 
 onMounted(async () => {
+  if (!isLoggedIn.value) {
+    formData.value = cloneProfile({});
+    return;
+  }
   await userStore.loadProfile();
   formData.value = cloneProfile(userStore.profile);
 });
@@ -384,6 +419,19 @@ const handleSubmit = async () => {
   setTimeout(() => {
     message.value = '';
   }, 3000);
+};
+
+const handleRecommend = async () => {
+  userStore.updateProfile(formData.value);
+  const ok = await userStore.saveProfile();
+  if (!ok) {
+    message.value = userStore.error || '??? ??? ??????.';
+    messageType.value = 'error';
+    return;
+  }
+  await userStore.loadProfile();
+  formData.value = cloneProfile(userStore.profile);
+  router.push('/recommend');
 };
 </script>
 

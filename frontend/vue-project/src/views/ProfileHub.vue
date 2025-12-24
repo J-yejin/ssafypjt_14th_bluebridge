@@ -1,6 +1,25 @@
 ﻿<template>
   <div class="min-h-screen">
-    <div class="max-w-[1100px] mx-auto px-8 lg:px-12 py-12">
+    <div v-if="!isLoggedIn" class="min-h-screen flex items-center justify-center">
+      <div class="max-w-2xl mx-auto px-8 lg:px-12">
+        <div class="bg-white rounded-3xl shadow-2xl p-12 text-center">
+          <div class="w-24 h-24 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-6 shadow-lg">
+            <AlertCircle :size="48" class="text-blue-600" />
+          </div>
+          <h2 class="text-blue-900 mb-4 text-3xl">로그인이 필요해요</h2>
+          <p class="text-gray-600 mb-8 text-lg leading-relaxed">
+            마이 페이지를 보려면 로그인 후 이용해주세요.
+          </p>
+          <router-link
+            to="/login"
+            class="inline-flex items-center gap-3 bg-gradient-to-r from-blue-500 to-cyan-500 text-white px-10 py-4 rounded-2xl hover:shadow-2xl transition-all text-lg shadow-lg"
+          >
+            로그인하러 가기
+          </router-link>
+        </div>
+      </div>
+    </div>
+    <div v-else class="max-w-[1100px] mx-auto px-8 lg:px-12 py-12">
       <div class="mb-12 text-center">
         <h1 class="text-blue-900 mb-3 text-4xl">마이 페이지</h1>
         <p class="text-gray-600 text-lg">나의 프로필과 나의 관심정책 중 원하는 메뉴를 선택하세요.</p>
@@ -48,7 +67,12 @@
 </template>
 
 <script setup>
-import { User, Heart } from 'lucide-vue-next';
+import { computed } from 'vue';
+import { User, Heart, AlertCircle } from 'lucide-vue-next';
+import { useAuthStore } from '../stores/authStore';
+
+const authStore = useAuthStore();
+const isLoggedIn = computed(() => authStore.isAuthenticated);
 </script>
 
 
