@@ -1,6 +1,11 @@
 import { defineStore } from 'pinia';
 import { ref } from 'vue';
-import { fetchPolicies, fetchPolicyById, fetchRecommendations } from '../api/client';
+import {
+  fetchPolicies,
+  fetchPolicyById,
+  fetchRecommendDetail,
+  fetchRecommendList,
+} from '../api/client';
 import { mockPolicies } from '../data/mockPolicies';
 
 const toPeriod = (start, end) => {
@@ -123,11 +128,7 @@ const transformPolicy = (p) => {
     .map((v) => v.trim())
     .filter(Boolean);
   const mappedCategories = cleanList(rawCategoryParts.map(mapToBucket).filter(Boolean));
-
-  let category = mappedCategories[0];
-  if (!category) {
-    category = p.source === 'youth' ? '기타' : '기타';
-  }
+  const category = mappedCategories[0] || '기타';
 
   const region = p.region_sigungu || p.region_sido || '';
   const regionBuckets = mapRegionsToBuckets(p.applicable_regions, region);
@@ -149,6 +150,7 @@ const transformPolicy = (p) => {
     id: p.id ?? p.source_id ?? p.sourceId ?? String(Math.random()),
     title: p.title || '',
     category,
+    categories: mappedCategories,
     organization: p.provider || '',
     description: formatMultiline(p.summary || ''),
     eligibility,
@@ -175,6 +177,7 @@ export const usePolicyStore = defineStore('policy', () => {
   const policies = ref([...mockPolicies]);
   const loading = ref(false);
   const error = ref(null);
+  const pagination = ref({ count: 0, next: null, previous: null, page_size: 20 });
 
   const setPolicies = (list) => {
     policies.value = list || [];
@@ -187,8 +190,25 @@ export const usePolicyStore = defineStore('policy', () => {
     error.value = null;
     try {
       const data = await fetchPolicies(filters);
-      if (Array.isArray(data)) {
-        setPolicies(data.map(transformPolicy).filter(Boolean));
+      let items = data;
+      if (data && Array.isArray(data.results)) {
+        items = data.results;
+        pagination.value = {
+          count: data.count || 0,
+          next: data.next || null,
+          previous: data.previous || null,
+          page_size: filters.page_size || 20,
+        };
+      } else {
+        pagination.value = {
+          count: Array.isArray(items) ? items.length : 0,
+          next: null,
+          previous: null,
+          page_size: filters.page_size || 20,
+        };
+      }
+      if (Array.isArray(items)) {
+        setPolicies(items.map(transformPolicy).filter(Boolean));
       }
     } catch (err) {
       error.value = err.message || '정책 목록을 불러오지 못했습니다';
@@ -224,30 +244,39 @@ export const usePolicyStore = defineStore('policy', () => {
     return null;
   };
 
-  const recommendPolicies = async (payload) => {
+  const recommendPolicies = async () => {
     loading.value = true;
     error.value = null;
     try {
-      const data = await fetchRecommendations(payload);
+      const data = await fetchRecommendList();
       if (Array.isArray(data)) {
         return data.map(transformPolicy).filter(Boolean);
       }
     } catch (err) {
       error.value = err.message || '추천 결과를 불러오지 못했습니다';
-      // fallback: simple filtering by interests + region
-      const interests = (payload?.interests || []).map((v) => v.toLowerCase());
-      return policies.value.filter((policy) => {
-        const tagMatch = interests.length
-          ? policy.tags.some((tag) => interests.includes(tag.toLowerCase()))
-          : true;
-        const regionMatch =
-          payload?.region ? policy.region === payload.region || policy.region === '전국' : true;
-        return tagMatch && regionMatch;
-      });
+      return [];
     } finally {
       loading.value = false;
     }
     return [];
+  };
+
+  const recommendPoliciesByQuery = async (query) => {
+    loading.value = true;
+    error.value = null;
+    try {
+      const data = await fetchRecommendDetail(query);
+      const results = Array.isArray(data?.results)
+        ? data.results.map(transformPolicy).filter(Boolean)
+        : [];
+      const top3 = Array.isArray(data?.top3) ? data.top3 : [];
+      return { results, top3 };
+    } catch (err) {
+      error.value = err.message || '추천 결과를 불러오지 못했습니다';
+      return { results: [], top3: [] };
+    } finally {
+      loading.value = false;
+    }
   };
 
   const searchPolicies = (query) => {
@@ -272,11 +301,13 @@ export const usePolicyStore = defineStore('policy', () => {
     policies,
     loading,
     error,
+    pagination,
     setPolicies,
     getById,
     loadPolicies,
     loadPolicyById,
     recommendPolicies,
+    recommendPoliciesByQuery,
     searchPolicies,
   };
 });

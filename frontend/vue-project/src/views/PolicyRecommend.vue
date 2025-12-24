@@ -187,13 +187,14 @@ const ragQuery = ref('');
 const showRagResults = ref(false);
 const ragBasedRecommendations = ref([]);
 const recommendedFromApi = ref([]);
+const ragTop3 = ref([]);
 
 const loadRecommendations = async () => {
   if (!userStore.isProfileComplete) {
     recommendedFromApi.value = [];
     return;
   }
-  const results = await policyStore.recommendPolicies(userStore.profile);
+  const results = await policyStore.recommendPolicies();
   recommendedFromApi.value = results || [];
 };
 
@@ -244,11 +245,22 @@ const handleRagSearch = () => {
   const query = ragQuery.value.trim();
   if (!query) {
     ragBasedRecommendations.value = [];
+    ragTop3.value = [];
     showRagResults.value = false;
     return;
   }
-  ragBasedRecommendations.value = policyStore.searchPolicies(query);
-  showRagResults.value = true;
+  policyStore
+    .recommendPoliciesByQuery(query)
+    .then(({ results, top3 }) => {
+      ragBasedRecommendations.value = results || [];
+      ragTop3.value = top3 || [];
+      showRagResults.value = true;
+    })
+    .catch(() => {
+      ragBasedRecommendations.value = [];
+      ragTop3.value = [];
+      showRagResults.value = false;
+    });
 };
 
 const goLogin = () => router.push('/login');

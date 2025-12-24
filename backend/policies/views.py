@@ -13,23 +13,51 @@ from datetime import date
 from .models import Policy, Wishlist
 from .serializers import PolicySerializer, PolicyListSerializer, WishlistCreateSerializer, WishlistItemSerializer
 
-# 정책 리스트 조회 : 초기 화면 - 랜덤으로 20개 보여줌
+# 정책 리스트 조회 : 기본 리스트 (페이지네이션, 랜덤 아님)
 @api_view(["GET"])
 def policy_list(request):
-    qs = Policy.objects.all()
-    total = qs.count()
+    qs = Policy.objects.filter(status="ACTIVE")
 
-    if total <= 20:
-        policies = qs
-    else:
-        random_ids = random.sample(
-            list(qs.values_list("id", flat=True)),
-            20
-        )
-        policies = qs.filter(id__in=random_ids)
+    # 검색어
+    q = request.query_params.get("q")
+    if q:
+        qs = qs.filter(search_summary__icontains=q)
 
-    serializer = PolicySerializer(policies, many=True)
-    return Response(serializer.data)
+    # 카테고리
+    category = request.query_params.get("category")
+    if category:
+        # 매핑된 버킷 이름과 원본 카테고리 키워드를 모두 검색
+        bucket = category.strip()
+        synonyms = {
+            "일자리": ["일자리", "취업", "창업"],
+            "교육": ["교육"],
+            "복지문화": ["복지문화", "문화", "문화·여가", "문화여가"],
+            "건강": ["건강", "신체건강", "정신건강"],
+            "생활지원": ["생활지원", "보육", "돌봄", "보호·돌봄", "주거"],
+            "재무/법률": ["재무", "법률", "서민금융", "재무/법률"],
+            "위기·안전": ["위기", "안전", "위기·안전"],
+            "가족/권리": ["가족", "권리", "임신·출산", "입양·위탁", "참여권리"],
+            "기타": ["기타"],
+        }
+        keys = synonyms.get(bucket, [bucket])
+        q_obj = Q()
+        for key in keys:
+            q_obj |= Q(category__icontains=key)
+        qs = qs.filter(q_obj)
+
+    # 지역(시도) - 전국 포함
+    region = request.query_params.get("region")
+    if region:
+        qs = qs.filter(Q(region_scope="NATIONWIDE") | Q(region_sido=region))
+
+    # 정렬
+    ordering = request.query_params.get("ordering", "-id")
+    qs = qs.order_by(ordering)
+
+    paginator = PolicySearchPagination()
+    page = paginator.paginate_queryset(qs, request)
+    serializer = PolicyListSerializer(page, many=True)
+    return paginator.get_paginated_response(serializer.data)
 
 # 정책 상세 조회
 @api_view(["GET"])

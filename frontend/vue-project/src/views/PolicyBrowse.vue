@@ -79,7 +79,7 @@
       <!-- 결과 상단 -->
       <div class="mb-6 flex items-center justify-between">
         <p class="text-gray-600 text-lg">
-          총 <span class="text-blue-600">{{ filteredAndSortedPolicies.length }}</span>개의 정책
+          총 <span class="text-blue-600">{{ policyStore.pagination?.count || filteredAndSortedPolicies.length }}</span>개의 정책
         </p>
         <button
           v-if="searchTerm || selectedCategory || selectedRegion"
@@ -133,12 +133,33 @@
           정책을 불러오는 중입니다...
         </div>
       </div>
+
+      <!-- 페이지네이션 -->
+      <div class="mt-8 flex items-center justify-center gap-3" v-if="totalPages > 1">
+        <button
+          class="px-4 py-2 rounded-lg border text-gray-600 hover:bg-gray-50 disabled:opacity-50"
+          :disabled="currentPage === 1 || policyStore.loading"
+          @click="changePage(currentPage - 1)"
+        >
+          이전
+        </button>
+        <span class="text-gray-700">
+          {{ currentPage }} / {{ totalPages }}
+        </span>
+        <button
+          class="px-4 py-2 rounded-lg border text-gray-600 hover:bg-gray-50 disabled:opacity-50"
+          :disabled="currentPage === totalPages || policyStore.loading"
+          @click="changePage(currentPage + 1)"
+        >
+          다음
+        </button>
+      </div>
     </div>
   </div>
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue';
+import { ref, computed, onMounted, watch } from 'vue';
 import { Search, Filter, X } from 'lucide-vue-next';
 import { usePolicyStore } from '../stores/policyStore';
 
@@ -148,6 +169,7 @@ const selectedCategory = ref('');
 const selectedRegion = ref('');
 const sortBy = ref('title');
 const showFilters = ref(false);
+const currentPage = ref(1);
 
 const categories = [
   { label: '전체', value: '' },
@@ -185,40 +207,46 @@ const regions = [
   { label: '기타', value: '기타' },
 ];
 
+const loadPage = () => {
+  policyStore.loadPolicies({
+    page: currentPage.value,
+    q: searchTerm.value.trim(),
+    category: selectedCategory.value,
+    region: selectedRegion.value,
+    ordering: sortBy.value === 'title' ? 'title' : sortBy.value === 'category' ? 'category' : '-id',
+  });
+};
+
 onMounted(() => {
-  policyStore.loadPolicies();
+  loadPage();
 });
 
-const filteredAndSortedPolicies = computed(() => {
-  const list = policyStore.policies || [];
-  let filtered = list.filter((policy) => {
-    const term = searchTerm.value.trim().toLowerCase();
-    const matchesSearch =
-      term === '' ||
-      policy.title.toLowerCase().includes(term) ||
-      policy.description.toLowerCase().includes(term) ||
-      policy.tags.some((tag) => tag.toLowerCase().includes(term));
-
-    const matchesCategory = selectedCategory.value === '' || policy.category === selectedCategory.value;
-    const matchesRegion =
-      selectedRegion.value === '' ||
-      (policy.regionBuckets || [policy.regionBucket]).includes(selectedRegion.value);
-
-    return matchesSearch && matchesCategory && matchesRegion;
-  });
-
-  filtered.sort((a, b) => {
-    if (sortBy.value === 'title') return a.title.localeCompare(b.title);
-    if (sortBy.value === 'category') return a.category.localeCompare(b.category);
-    return 0;
-  });
-
-  return filtered;
-});
+const filteredAndSortedPolicies = computed(() => policyStore.policies || []);
 
 const resetFilters = () => {
   searchTerm.value = '';
   selectedCategory.value = '';
   selectedRegion.value = '';
+  sortBy.value = 'title';
+  currentPage.value = 1;
+  loadPage();
 };
+
+const totalPages = computed(() => {
+  const count = policyStore.pagination?.count || 0;
+  const size = policyStore.pagination?.page_size || 20;
+  return Math.max(1, Math.ceil(count / size));
+});
+
+const changePage = (page) => {
+  const target = Math.min(Math.max(1, page), totalPages.value);
+  if (target === currentPage.value) return;
+  currentPage.value = target;
+  loadPage();
+};
+
+watch([searchTerm, selectedCategory, selectedRegion, sortBy], () => {
+  currentPage.value = 1;
+  loadPage();
+});
 </script>

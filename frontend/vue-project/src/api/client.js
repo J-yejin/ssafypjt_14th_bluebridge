@@ -53,10 +53,15 @@ export async function fetchPolicyById(id) {
   return request(`/policies/${id}/`);
 }
 
-export async function fetchRecommendations(payload) {
-  return request('/policies/recommend/', {
+// 추천
+export async function fetchRecommendList() {
+  return request('/recommend/');
+}
+
+export async function fetchRecommendDetail(query) {
+  return request('/recommend/detail/', {
     method: 'POST',
-    body: JSON.stringify(payload),
+    body: JSON.stringify({ query }),
   });
 }
 
