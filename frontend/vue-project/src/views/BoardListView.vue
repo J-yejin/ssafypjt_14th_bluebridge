@@ -17,7 +17,6 @@
           >
             <span>{{ item.label }}</span>
           </button>
-          <button class="sidebar-write" @click="handleWrite">글 작성</button>
         </div>
       </aside>
 
@@ -140,15 +139,6 @@ const handleSelect = (id) => {
   router.push(`/boards/${id}`);
 };
 
-const handleWrite = () => {
-  if (!authStore.isAuthenticated) {
-    alert('로그인 후 작성할 수 있습니다.');
-    router.push('/login');
-    return;
-  }
-  router.push('/boards/new');
-};
-
 const setCategory = (value) => {
   selectedCategory.value = value;
   router.replace({ query: { ...route.query, category: value === 'all' ? undefined : value } });
@@ -189,10 +179,11 @@ watch(
 
 @media (min-width: 1024px) {
   .container {
-    grid-template-columns: 4fr 1.2fr;
+    grid-template-columns: minmax(220px, 20%) 1fr;
     align-items: start;
   }
 }
+
 
 .sidebar {
   background: #fff;
@@ -201,8 +192,13 @@ watch(
   border: 1px solid #e5e7eb;
   padding: 0;
   overflow: hidden;
-  min-height: 560px;
+
+  /* 핵심 */
+  height: fit-content;   /* 콘텐츠만큼만 */
+  position: sticky;
+  top: 24px;             /* 스크롤 시 따라오기 시작 위치 */
 }
+
 
 .sidebar-header {
   background: linear-gradient(135deg, #4fb184 0%, #43a5d4 100%);
@@ -253,23 +249,6 @@ watch(
   border: 1px solid #4fb184;
   background: #e1f4ea;
   color: #2f855a;
-}
-
-.sidebar-write {
-  width: 100%;
-  padding: 14px;
-  border-radius: 12px;
-  border: none;
-  background: linear-gradient(135deg, #4fb184 0%, #43a5d4 100%);
-  color: #fff;
-  font-weight: 700;
-  box-shadow: 0 10px 20px rgba(79, 177, 132, 0.25);
-  cursor: pointer;
-  transition: all 0.15s ease;
-}
-
-.sidebar-write:hover {
-  filter: brightness(1.05);
 }
 
 .content {

@@ -1,6 +1,14 @@
 import { defineStore } from 'pinia';
 import { ref } from 'vue';
-import { fetchBoards, fetchBoardById, createBoard, createComment, deleteComment } from '../api/client';
+import {
+  fetchBoards,
+  fetchBoardById,
+  createBoard,
+  createComment,
+  deleteComment,
+  updateBoard,
+  deleteBoard,
+} from '../api/client';
 
 export const useBoardStore = defineStore('board', () => {
   const boards = ref([]);
@@ -84,6 +92,42 @@ export const useBoardStore = defineStore('board', () => {
     }
   };
 
+  const editBoard = async (id, payload) => {
+    loading.value = true;
+    error.value = null;
+    try {
+      const data = await updateBoard(id, payload);
+      if (current.value?.id === id) {
+        current.value = { ...current.value, ...data };
+      }
+      boards.value = boards.value.map((b) => (b.id === id ? { ...b, ...data } : b));
+      return data;
+    } catch (err) {
+      error.value = err.message || '게시글 수정에 실패했습니다.';
+      throw err;
+    } finally {
+      loading.value = false;
+    }
+  };
+
+  const removeBoard = async (id) => {
+    loading.value = true;
+    error.value = null;
+    try {
+      await deleteBoard(id);
+      boards.value = boards.value.filter((b) => b.id !== id);
+      if (current.value?.id === id) current.value = null;
+    } catch (err) {
+      error.value = err.message || '게시글 삭제에 실패했습니다.';
+      throw err;
+    } finally {
+      loading.value = false;
+    }
+  };
+
+  // alias to avoid stale HMR instances missing the action
+  const deleteBoardAction = removeBoard;
+
   return {
     boards,
     current,
@@ -92,6 +136,9 @@ export const useBoardStore = defineStore('board', () => {
     loadBoards,
     loadBoardById,
     addBoard,
+    editBoard,
+    removeBoard,
+    deleteBoardAction,
     addComment,
     removeComment,
   };

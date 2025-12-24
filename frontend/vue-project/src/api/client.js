@@ -125,6 +125,19 @@ export async function createBoard(payload) {
   });
 }
 
+export async function updateBoard(id, payload) {
+  return request(`/boards/${id}/`, {
+    method: 'PUT',
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function deleteBoard(id) {
+  return request(`/boards/${id}/`, {
+    method: 'DELETE',
+  });
+}
+
 export async function createComment(boardId, payload) {
   return request(`/boards/${boardId}/comments/`, {
     method: 'POST',
