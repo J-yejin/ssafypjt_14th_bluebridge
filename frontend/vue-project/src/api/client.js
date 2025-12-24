@@ -26,6 +26,8 @@ async function request(path, options = {}) {
         detail = '로그인이 만료되었습니다. 다시 로그인해 주세요.';
       } else if (errJson?.detail) {
         detail = typeof errJson.detail === 'string' ? errJson.detail : JSON.stringify(errJson.detail);
+      } else if (errJson && Object.keys(errJson).length) {
+        detail = JSON.stringify(errJson);
       }
     } catch (_) {
       // fallback to text
@@ -107,6 +109,11 @@ export async function signup(payload) {
     method: 'POST',
     body: JSON.stringify(payload),
   });
+}
+
+export async function checkUsername(username) {
+  const params = new URLSearchParams({ username });
+  return request(`/auth/check-username/?${params.toString()}`);
 }
 
 // boards
