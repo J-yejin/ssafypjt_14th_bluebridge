@@ -71,6 +71,17 @@ const normalizeDate = (value) => {
   return m ? m[1] : v;
 };
 
+const normalizeRecommendResponse = (data) => {
+  if (!data) return { results: [], top3: [], meta: {} };
+  if (Array.isArray(data)) return { results: data, top3: [], meta: {} };
+  const results = Array.isArray(data.results) ? data.results : [];
+  const top3 = Array.isArray(data.top3) ? data.top3 : [];
+  const echoQuery = data.echo_query || data.echoQuery || '';
+  const queryExamples = data.query_examples || data.queryExamples || [];
+  const distances = Array.isArray(data.distances) ? data.distances : [];
+  return { results, top3, meta: { distances, echoQuery, queryExamples } };
+};
+
 const transformPolicy = (p) => {
   if (!p) return null;
 
@@ -286,32 +297,31 @@ export const usePolicyStore = defineStore('policy', () => {
     loading.value = true;
     error.value = null;
     try {
-      const data = await fetchRecommendList();
-      if (Array.isArray(data)) {
-        return data.map(transformPolicy).filter(Boolean);
-      }
+      const payload = normalizeRecommendResponse(await fetchRecommendList());
+      return {
+        ...payload,
+        results: payload.results.map(transformPolicy).filter(Boolean),
+      };
     } catch (err) {
-      error.value = err.message || '추천 결과를 불러오지 못했습니다';
-      return [];
+      error.value = err.message || 'Failed to load recommendations.';
+      return { results: [], top3: [], meta: {} };
     } finally {
       loading.value = false;
     }
-    return [];
   };
 
   const recommendPoliciesByQuery = async (query) => {
     loading.value = true;
     error.value = null;
     try {
-      const data = await fetchRecommendDetail(query);
-      const results = Array.isArray(data?.results)
-        ? data.results.map(transformPolicy).filter(Boolean)
-        : [];
-      const top3 = Array.isArray(data?.top3) ? data.top3 : [];
-      return { results, top3 };
+      const payload = normalizeRecommendResponse(await fetchRecommendDetail(query));
+      return {
+        ...payload,
+        results: payload.results.map(transformPolicy).filter(Boolean),
+      };
     } catch (err) {
-      error.value = err.message || '추천 결과를 불러오지 못했습니다';
-      return { results: [], top3: [] };
+      error.value = err.message || 'Failed to load recommendations.';
+      return { results: [], top3: [], meta: {} };
     } finally {
       loading.value = false;
     }

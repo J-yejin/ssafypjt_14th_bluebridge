@@ -57,12 +57,21 @@
 
       <!-- RAG Search -->
       <div class="bg-white rounded-2xl shadow-xl p-10 mb-12 border border-blue-100">
-        <div class="flex items-start gap-4 mb-6">
+        <div class="flex items-start justify-between gap-4 mb-6">
           <div class="w-12 h-12 bg-gradient-to-br from-cyan-400 to-cyan-600 rounded-xl flex items-center justify-center flex-shrink-0 shadow-md">
             <Sparkles :size="24" class="text-white" />
           </div>
-          <div>
-            <h2 class="text-blue-900 mb-2 text-2xl">AI 정책 검색</h2>
+          <div class="flex-1">
+            <h2 class="text-blue-900 mb-2 text-2xl flex items-center gap-3">
+              AI 정책 검색
+              <span
+                v-if="ragLoading"
+                class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-gradient-to-r from-cyan-100 to-blue-100 text-cyan-700 text-sm border border-cyan-200 shadow-sm"
+              >
+                <span class="w-2 h-2 rounded-full bg-cyan-500 animate-pulse" />
+                검색 중입니다
+              </span>
+            </h2>
             <p class="text-gray-600 text-lg">키워드나 조건을 입력하면 AI가 관련 정책을 찾아줍니다.</p>
           </div>
         </div>
@@ -85,49 +94,97 @@
       </div>
 
       <!-- RAG Results -->
-      <div v-if="showRagResults && ragBasedRecommendations.length > 0" class="mb-12">
-        <h2 class="text-blue-900 mb-6 text-3xl">AI 추천 결과</h2>
-        <div class="grid lg:grid-cols-2 gap-8">
-          <router-link
-            v-for="policy in ragBasedRecommendations"
-            :key="policy.id"
-            :to="`/policy/${policy.id}`"
-            class="bg-gradient-to-br from-cyan-50 to-blue-50 rounded-2xl shadow-lg hover:shadow-2xl transition-all p-8 border-2 border-cyan-200 hover:border-cyan-300 group relative overflow-hidden"
-          >
-            <div class="absolute top-0 right-0 w-32 h-32 bg-cyan-200/30 rounded-full -mr-16 -mt-16" />
-            <div class="relative">
-              <div class="flex items-center gap-3 mb-4">
-                <Sparkles :size="20" class="text-cyan-600" />
-                <span class="text-cyan-700">AI 추천</span>
-              </div>
-              <div class="flex items-start justify-between mb-4">
-                <div class="flex items-center gap-3">
-                  <span class="px-4 py-1.5 bg-cyan-100 text-cyan-700 rounded-full">
-                    {{ policy.category }}
+      <div v-if="showRagResults || ragLoading" class="mb-12">
+        <div v-if="ragLoading" class="flex items-center gap-3 mb-4">
+          <span class="px-4 py-2 bg-cyan-50 text-cyan-700 rounded-full text-sm shadow-sm">검색 중입니다</span>
+        </div>
+        <div v-if="showRagResults && ragBasedRecommendations.length > 0">
+          <div class="flex items-center gap-3 mb-6">
+            <h2 class="text-blue-900 text-3xl">AI 추천 결과</h2>
+            <span
+              v-if="ragLoading"
+              class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-gradient-to-r from-cyan-100 to-blue-100 text-cyan-700 text-sm border border-cyan-200 shadow-sm"
+            >
+              <span class="w-2 h-2 rounded-full bg-cyan-500 animate-pulse" />
+              검색 중입니다
+            </span>
+          </div>
+          <div class="grid lg:grid-cols-2 gap-8">
+            <router-link
+              v-for="policy in ragBasedRecommendations"
+              :key="policy.id"
+              :to="`/policy/${policy.id}`"
+              class="bg-gradient-to-br from-cyan-50 to-blue-50 rounded-2xl shadow-lg hover:shadow-2xl transition-all p-8 border-2 border-cyan-200 hover:border-cyan-300 group relative overflow-hidden"
+            >
+              <div class="absolute top-0 right-0 w-32 h-32 bg-cyan-200/30 rounded-full -mr-16 -mt-16" />
+              <div class="relative">
+                <div class="flex items-center gap-3 mb-4">
+                  <Sparkles :size="20" class="text-cyan-600" />
+                  <span class="text-cyan-700">AI 추천</span>
+                </div>
+                <div class="flex items-start justify-between mb-4">
+                  <div class="flex items-center gap-3">
+                    <span class="px-4 py-1.5 bg-cyan-100 text-cyan-700 rounded-full">
+                      {{ policy.category }}
+                    </span>
+                    <span class="text-gray-500">{{ policy.organization }}</span>
+                  </div>
+                </div>
+                <div class="flex items-center justify-between gap-3 mb-3">
+                  <h3 class="text-blue-900 text-2xl group-hover:text-blue-700 transition-colors">{{ policy.title }}</h3>
+                  <span
+                    v-if="formatScore(policy.raw?.similarity_score_10 ?? policy.raw?.query_similarity)"
+                    class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/60 text-cyan-700 text-sm border border-cyan-200 shadow-sm"
+                  >
+                    <Sparkles :size="16" class="text-cyan-500" />
+                    적합도 {{ formatScore(policy.raw?.similarity_score_10 ?? policy.raw?.query_similarity) }}
                   </span>
-                  <span class="text-gray-500">{{ policy.organization }}</span>
+                </div>
+
+                <div class="flex flex-wrap gap-2">
+                  <span v-for="tag in policy.tags" :key="tag" class="px-3 py-1 bg-white/60 text-gray-600 rounded-lg text-sm">
+                    #{{ tag }}
+                  </span>
+                </div>
+
+                <div
+                  v-if="ragReasonMap[String(policy.id)]"
+                  class="mt-4 px-4 py-3 bg-white/70 rounded-xl border border-cyan-100 text-gray-700 text-sm leading-relaxed"
+                >
+                  <span class="font-semibold text-cyan-700">추천 이유</span>
+                  <span class="mx-2 text-gray-400">•</span>
+                  <span>{{ ragReasonMap[String(policy.id)] }}</span>
                 </div>
               </div>
-              <h3 class="text-blue-900 mb-3 text-2xl group-hover:text-blue-700 transition-colors">{{ policy.title }}</h3>
-    
-              <div class="flex flex-wrap gap-2">
-                <span
-                  v-for="tag in policy.tags"
-                  :key="tag"
-                  class="px-3 py-1 bg-white/60 text-gray-600 rounded-lg text-sm"
-                >
-                  #{{ tag }}
-                </span>
-              </div>
-            </div>
-          </router-link>
+            </router-link>
+          </div>
+        </div>
+        <div
+          v-else-if="showRagResults && !ragLoading"
+          class="bg-white rounded-2xl p-12 text-center shadow-md border border-cyan-100"
+        >
+          <div class="w-20 h-20 bg-cyan-50 rounded-full flex items-center justify-center mx-auto mb-4">
+            <Search :size="40" class="text-cyan-400" />
+          </div>
+          <p class="text-gray-600 text-lg mb-2">출력된 결과가 없습니다.</p>
+          <p class="text-gray-400">다른 키워드로 다시 검색해 보세요.</p>
         </div>
       </div>
 
       <!-- Profile-based Recommendations -->
       <div>
-        <h2 class="text-blue-900 mb-6 text-3xl">프로필 기반 추천</h2>
-        <div v-if="profileBasedRecommendations.length > 0" class="grid lg:grid-cols-2 gap-8">
+        <div class="flex items-center gap-3 mb-6">
+          <h2 class="text-blue-900 text-3xl">프로필 기반 추천</h2>
+          <span
+            v-if="profileLoading"
+            class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-gradient-to-r from-blue-100 to-cyan-100 text-blue-700 text-sm border border-blue-200 shadow-sm"
+          >
+            <span class="w-2 h-2 rounded-full bg-blue-500 animate-pulse" />
+            추천 준비 중입니다
+          </span>
+        </div>
+        <div v-if="profileLoading" class="flex items-center gap-3 mb-4"></div>
+        <div v-else-if="profileBasedRecommendations.length > 0" class="grid lg:grid-cols-2 gap-8">
           <router-link
             v-for="policy in profileBasedRecommendations"
             :key="policy.id"
@@ -143,16 +200,30 @@
               </div>
               <span class="text-gray-500 bg-gray-50 px-3 py-1 rounded-full text-sm">{{ policy.region }}</span>
             </div>
-            <h3 class="text-blue-900 mb-3 text-2xl group-hover:text-blue-700 transition-colors">{{ policy.title }}</h3>
-  
-            <div class="flex flex-wrap gap-2">
+            <div class="flex items-center justify-between gap-3 mb-3">
+              <h3 class="text-blue-900 text-2xl group-hover:text-blue-700 transition-colors">{{ policy.title }}</h3>
               <span
-                v-for="tag in policy.tags"
-                :key="tag"
-                class="px-3 py-1 bg-gray-100 text-gray-600 rounded-lg text-sm"
+                v-if="formatScore(policy.raw?.profile_score_10 ?? policy.raw?.ux_score)"
+                class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-50 text-blue-700 text-sm border border-blue-200 shadow-sm"
               >
+                <Sparkles :size="16" class="text-blue-500" />
+                적합도 {{ formatScore(policy.raw?.profile_score_10 ?? policy.raw?.ux_score) }}
+              </span>
+            </div>
+
+            <div class="flex flex-wrap gap-2">
+              <span v-for="tag in policy.tags" :key="tag" class="px-3 py-1 bg-gray-100 text-gray-600 rounded-lg text-sm">
                 #{{ tag }}
               </span>
+            </div>
+
+            <div
+              v-if="profileReasonMap[String(policy.id)]"
+              class="mt-4 px-4 py-3 bg-blue-50 rounded-xl border border-blue-100 text-gray-700 text-sm leading-relaxed"
+            >
+              <span class="font-semibold text-blue-700">추천 이유</span>
+              <span class="mx-2 text-gray-400">•</span>
+              <span>{{ profileReasonMap[String(policy.id)] }}</span>
             </div>
           </router-link>
         </div>
@@ -160,8 +231,8 @@
           <div class="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
             <Search :size="40" class="text-gray-400" />
           </div>
-          <p class="text-gray-500 text-lg mb-2">프로필에 맞는 정책을 찾지 못했어요.</p>
-          <p class="text-gray-400 mb-6">관심사나 지역을 바꿔 검색해 보세요.</p>
+          <p class="text-gray-500 text-lg mb-2">출력된 결과가 없습니다.</p>
+          <p class="text-gray-400 mb-6">관심사나 지역을 바꿔 다시 요청해 보세요.</p>
           <router-link
             to="/profile/edit"
             class="inline-flex items-center gap-2 bg-gradient-to-r from-blue-500 to-cyan-500 text-white px-6 py-3 rounded-xl hover:shadow-lg transition-all text-base shadow-md"
@@ -193,16 +264,48 @@ const isLoggedIn = computed(() => authStore.isAuthenticated);
 const ragQuery = ref('');
 const showRagResults = ref(false);
 const ragBasedRecommendations = ref([]);
+const ragLoading = ref(false);
+const ragMeta = ref({});
 const recommendedFromApi = ref([]);
+const profileLoading = ref(false);
+const profileTop3 = ref([]);
+const profileMeta = ref({});
 const ragTop3 = ref([]);
+const ragReasonMap = computed(() => {
+  const map = {};
+  ragTop3.value.forEach((item) => {
+    map[String(item.id)] = item.reason;
+  });
+  return map;
+});
+const profileReasonMap = computed(() => {
+  const map = {};
+  profileTop3.value.forEach((item) => {
+    map[String(item.id)] = item.reason;
+  });
+  return map;
+});
 
 const loadRecommendations = async () => {
   if (!userStore.isProfileComplete) {
     recommendedFromApi.value = [];
+    profileTop3.value = [];
+    profileMeta.value = {};
     return;
   }
-  const results = await policyStore.recommendPolicies();
-  recommendedFromApi.value = results || [];
+  profileLoading.value = true;
+  try {
+    const payload = await policyStore.recommendPolicies();
+    recommendedFromApi.value = payload?.results || [];
+    profileTop3.value = payload?.top3 || [];
+    profileMeta.value = payload?.meta || {};
+  } catch (_) {
+    recommendedFromApi.value = [];
+    profileTop3.value = [];
+    profileMeta.value = {};
+  } finally {
+    profileLoading.value = false;
+  }
 };
 
 onMounted(async () => {
@@ -254,20 +357,34 @@ const handleRagSearch = () => {
     ragBasedRecommendations.value = [];
     ragTop3.value = [];
     showRagResults.value = false;
+    ragMeta.value = {};
     return;
   }
+  ragLoading.value = true;
+  showRagResults.value = true;
+  ragMeta.value = {};
   policyStore
     .recommendPoliciesByQuery(query)
-    .then(({ results, top3 }) => {
+    .then(({ results, top3, meta }) => {
       ragBasedRecommendations.value = results || [];
       ragTop3.value = top3 || [];
-      showRagResults.value = true;
+      ragMeta.value = meta || {};
     })
     .catch(() => {
       ragBasedRecommendations.value = [];
       ragTop3.value = [];
-      showRagResults.value = false;
+      ragMeta.value = {};
+    })
+    .finally(() => {
+      ragLoading.value = false;
     });
+};
+
+const formatScore = (score) => {
+  if (score === null || score === undefined || score === '') return null;
+  const num = Number(score);
+  if (Number.isNaN(num)) return null;
+  return num.toFixed(1);
 };
 
 const goLogin = () => router.push('/login');
