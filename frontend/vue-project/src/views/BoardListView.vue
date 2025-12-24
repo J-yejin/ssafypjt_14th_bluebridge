@@ -19,9 +19,6 @@
       <div class="bg-white rounded-2xl shadow-inner border border-gray-100 overflow-hidden">
         <div class="overflow-x-auto">
           <div class="min-w-[720px]">
-            <div class="grid grid-cols-[80px_1fr_160px_140px] bg-blue-50 text-blue-900 font-semibold text-sm px-6 py-3">
-
-            </div>
             <div v-if="boardStore.loading" class="p-8 text-center text-gray-500">불러오는 중...</div>
             <div v-else-if="boardStore.error" class="p-8 text-center text-red-500">{{ boardStore.error }}</div>
             <div v-else-if="filteredBoards.length === 0" class="p-8 text-center text-gray-500">게시글이 없습니다.</div>

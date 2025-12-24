@@ -41,6 +41,26 @@
   --sidebar-ring: oklch(0.708 0 0);
 }
 
+/* Global font application */
+body,
+button,
+input,
+select,
+textarea,
+pre {
+  font-family: 'NanumSquareNeo', 'NanumSquareNeoBold', 'NanumSquareNeoLight', ui-sans-serif, system-ui, sans-serif;
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  font-family: 'NanumSquareNeoExtraBold', 'NanumSquareNeoBold', 'NanumSquareNeo', ui-sans-serif, system-ui, sans-serif;
+  font-weight: 700;
+}
+
 .dark {
   --background: oklch(0.145 0 0);
   --foreground: oklch(0.985 0 0);
