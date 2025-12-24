@@ -1,4 +1,4 @@
-﻿<template>
+<template>
   <div class="min-h-screen">
     <div class="max-w-[1400px] mx-auto px-8 lg:px-12 py-12">
       <div class="mb-12">
@@ -79,7 +79,7 @@
       <!-- 결과 상단 -->
       <div class="mb-6 flex items-center justify-between">
         <p class="text-gray-600 text-lg">
-          총 <span class="text-blue-600">{{ filteredAndSortedPolicies.length }}</span>개의 정책
+          총 <span class="text-blue-600">{{ policyStore.pagination?.count || filteredAndSortedPolicies.length }}</span>개의 정책
         </p>
         <button
           v-if="browseState.searchTerm || browseState.selectedCategory || browseState.selectedRegion"
@@ -93,30 +93,12 @@
 
       <!-- 목록 -->
       <div class="grid lg:grid-cols-2 gap-8">
-        <div
+        <router-link
           v-for="policy in filteredAndSortedPolicies"
           :key="policy.id"
-          role="button"
-          tabindex="0"
-          class="bg-white rounded-2xl shadow-md hover:shadow-xl transition-all p-8 border-2 border-transparent hover:border-blue-200 group relative cursor-pointer"
-          @click="openPolicy(policy.id)"
-          @keydown.enter.prevent="openPolicy(policy.id)"
-          @keydown.space.prevent="openPolicy(policy.id)"
+          :to="`/policy/${policy.id}`"
+          class="bg-white rounded-2xl shadow-md hover:shadow-xl transition-all p-8 border-2 border-transparent hover:border-blue-200 group"
         >
-          <button
-            type="button"
-            class="absolute bottom-0 right-0 p-1 hover:scale-105 transition-transform"
-            style="transform: translate(-18px, -8px);"
-            :aria-pressed="policyStore.isWishlisted(policy.id)"
-            @click.stop="toggleWishlist(policy.id)"
-            title="관심 정책"
-          >
-            <Heart
-              :size="20"
-              :stroke="policyStore.isWishlisted(policy.id) ? '#ef4444' : '#9ca3af'"
-              :fill="policyStore.isWishlisted(policy.id) ? '#ef4444' : 'none'"
-            />
-          </button>
           <div class="flex items-start justify-between mb-4">
             <div class="flex items-center gap-3">
               <span class="px-4 py-1.5 bg-blue-100 text-blue-700 rounded-full">
@@ -137,7 +119,7 @@
               #{{ tag }}
             </span>
           </div>
-        </div>
+        </router-link>
 
         <div v-if="!policyStore.loading && filteredAndSortedPolicies.length === 0" class="col-span-2 text-center py-20 bg-white rounded-2xl shadow-md">
           <div class="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
@@ -151,21 +133,46 @@
           정책을 불러오는 중입니다...
         </div>
       </div>
+
+      <!-- 페이지네이션 -->
+      <div class="mt-8 flex items-center justify-center gap-3" v-if="totalPages > 1">
+        <button
+          class="px-4 py-2 rounded-lg border text-gray-600 hover:bg-gray-50 disabled:opacity-50"
+          :disabled="currentPage === 1 || policyStore.loading"
+          @click="changePage(currentPage - 1)"
+        >
+          이전
+        </button>
+        <span class="text-gray-700">
+          {{ currentPage }} / {{ totalPages }}
+        </span>
+        <button
+          class="px-4 py-2 rounded-lg border text-gray-600 hover:bg-gray-50 disabled:opacity-50"
+          :disabled="currentPage === totalPages || policyStore.loading"
+          @click="changePage(currentPage + 1)"
+        >
+          다음
+        </button>
+      </div>
     </div>
   </div>
 </template>
 
 <script setup>
-import { computed, onMounted } from 'vue';
 import { Search, Filter, X, Heart } from 'lucide-vue-next';
+import { ref, computed, onMounted, watch } from 'vue';
 import { usePolicyStore } from '../stores/policyStore';
-import { useAuthStore } from '../stores/authStore';
-import { useRouter } from 'vue-router';
 
 const policyStore = usePolicyStore();
 const authStore = useAuthStore();
 const router = useRouter();
 const browseState = policyStore.browseState;
+const searchTerm = ref('');
+const selectedCategory = ref('');
+const selectedRegion = ref('');
+const sortBy = ref('title');
+const showFilters = ref(false);
+const currentPage = ref(1);
 
 const categories = [
   { label: '전체', value: '' },
@@ -203,10 +210,18 @@ const regions = [
   { label: '기타', value: '기타' },
 ];
 
+const loadPage = () => {
+  policyStore.loadPolicies({
+    page: currentPage.value,
+    q: searchTerm.value.trim(),
+    category: selectedCategory.value,
+    region: selectedRegion.value,
+    ordering: sortBy.value === 'title' ? 'title' : sortBy.value === 'category' ? 'category' : '-id',
+  });
+};
+
 onMounted(() => {
-  if (!policyStore.hasLoaded) {
-    policyStore.loadPolicies();
-  }
+  loadPage();
   if (authStore.isAuthenticated) {
     policyStore.loadWishlist();
   }
@@ -229,41 +244,40 @@ const toggleWishlist = async (policyId) => {
   }
 };
 
-const filteredAndSortedPolicies = computed(() => {
-  const list = policyStore.policies || [];
-  let filtered = list.filter((policy) => {
-    const term = browseState.searchTerm.trim().toLowerCase();
-    const matchesSearch =
-      term === '' ||
-      policy.title.toLowerCase().includes(term) ||
-      policy.description.toLowerCase().includes(term) ||
-      policy.tags.some((tag) => tag.toLowerCase().includes(term));
 
-    const matchesCategory = browseState.selectedCategory === '' || policy.category === browseState.selectedCategory;
-    const matchesRegion =
-      browseState.selectedRegion === '' ||
-      (policy.regionBuckets || [policy.regionBucket]).includes(browseState.selectedRegion);
-
-    return matchesSearch && matchesCategory && matchesRegion;
-  });
-
-  filtered.sort((a, b) => {
-    if (browseState.sortBy === 'title') return a.title.localeCompare(b.title);
-    if (browseState.sortBy === 'category') return a.category.localeCompare(b.category);
-    return 0;
-  });
-
-  return filtered;
+onMounted(() => {
+  loadPage();
 });
+
+const filteredAndSortedPolicies = computed(() => policyStore.policies || []);
 
 const resetFilters = () => {
   browseState.searchTerm = '';
   browseState.selectedCategory = '';
   browseState.selectedRegion = '';
+  searchTerm.value = '';
+  selectedCategory.value = '';
+  selectedRegion.value = '';
+  sortBy.value = 'title';
+  currentPage.value = 1;
+  loadPage();
 };
 
-const openPolicy = (policyId) => {
-  if (policyId === undefined || policyId === null || policyId === '') return;
-  router.push(`/policy/${policyId}`);
+const totalPages = computed(() => {
+  const count = policyStore.pagination?.count || 0;
+  const size = policyStore.pagination?.page_size || 20;
+  return Math.max(1, Math.ceil(count / size));
+});
+
+const changePage = (page) => {
+  const target = Math.min(Math.max(1, page), totalPages.value);
+  if (target === currentPage.value) return;
+  currentPage.value = target;
+  loadPage();
 };
+
+watch([searchTerm, selectedCategory, selectedRegion, sortBy], () => {
+  currentPage.value = 1;
+  loadPage();
+});
 </script>
