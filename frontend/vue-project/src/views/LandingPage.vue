@@ -372,7 +372,7 @@ const featureCards = [
 :global(body) {
   background: #f5fbf1;
   color: #0f172a;
-  font-family: 'Pretendard', 'Inter', 'Noto Sans KR', system-ui, -apple-system, sans-serif;
+  font-family: 'NanumSquareNeo', 'NanumSquareNeoBold', 'NanumSquareNeoLight', system-ui, -apple-system, sans-serif;
 }
 
 .landing {
