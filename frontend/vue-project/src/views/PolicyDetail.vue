@@ -283,7 +283,8 @@ const handleShare = async () => {
 };
 
 onMounted(() => {
-  if (policyId.value && !policy.value) {
+  if (policyId.value) {
+    // Always fetch detail to ensure description / eligibility / 혜택이 채워짐
     policyStore.loadPolicyById(policyId.value);
   }
   if (authStore.isAuthenticated) {

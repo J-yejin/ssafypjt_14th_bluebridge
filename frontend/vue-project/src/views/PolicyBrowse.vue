@@ -14,22 +14,22 @@
             <input
               type="text"
               placeholder="정책명이나 키워드를 입력하세요"
-              v-model="browseState.searchTerm"
+              v-model="searchTerm"
               class="w-full pl-14 pr-12 py-4 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-lg"
             />
             <button
-              v-if="browseState.searchTerm"
-              @click="browseState.searchTerm = ''"
+              v-if="searchTerm"
+              @click="searchTerm = ''"
               class="absolute right-4 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
             >
               <X class="w-6 h-6" />
             </button>
           </div>
           <button
-            @click="browseState.showFilters = !browseState.showFilters"
+            @click="showFilters = !showFilters"
             :class="[
               'flex items-center gap-3 px-8 py-4 rounded-xl transition-all text-lg',
-              browseState.showFilters ? 'bg-blue-600 text-white shadow-lg' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+              showFilters ? 'bg-blue-600 text-white shadow-lg' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
             ]"
           >
             <Filter :size="20" />
@@ -38,11 +38,11 @@
         </div>
 
         <!-- 필터 -->
-        <div v-if="browseState.showFilters" class="mt-8 pt-8 border-t-2 border-gray-100 grid lg:grid-cols-3 gap-6">
+        <div v-if="showFilters" class="mt-8 pt-8 border-t-2 border-gray-100 grid lg:grid-cols-3 gap-6">
           <div>
             <label class="block text-gray-700 mb-3 text-lg">카테고리</label>
             <select
-              v-model="browseState.selectedCategory"
+              v-model="selectedCategory"
               class="w-full px-5 py-3.5 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-lg"
             >
               <option v-for="cat in categories" :key="cat.value" :value="cat.value">
@@ -54,7 +54,7 @@
           <div>
             <label class="block text-gray-700 mb-3 text-lg">지역</label>
             <select
-              v-model="browseState.selectedRegion"
+              v-model="selectedRegion"
               class="w-full px-5 py-3.5 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-lg"
             >
               <option v-for="region in regions" :key="region.value" :value="region.value">
@@ -66,7 +66,7 @@
           <div>
             <label class="block text-gray-700 mb-3 text-lg">정렬</label>
             <select
-              v-model="browseState.sortBy"
+              v-model="sortBy"
               class="w-full px-5 py-3.5 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-lg"
             >
               <option value="title">제목순</option>
@@ -76,13 +76,13 @@
         </div>
       </div>
 
-      <!-- 결과 상단 -->
+      <!-- 결과 헤더 -->
       <div class="mb-6 flex items-center justify-between">
         <p class="text-gray-600 text-lg">
-          총 <span class="text-blue-600">{{ policyStore.pagination?.count || filteredAndSortedPolicies.length }}</span>개의 정책
+          총 <span class="text-blue-600">{{ policyStore.pagination?.count || filteredPolicies.length }}</span>개의 정책
         </p>
         <button
-          v-if="browseState.searchTerm || browseState.selectedCategory || browseState.selectedRegion"
+          v-if="searchTerm || selectedCategory || selectedRegion"
           @click="resetFilters"
           class="text-blue-600 hover:text-blue-700 flex items-center gap-2 px-4 py-2 hover:bg-blue-50 rounded-lg transition-all"
         >
@@ -94,7 +94,7 @@
       <!-- 목록 -->
       <div class="grid lg:grid-cols-2 gap-8">
         <router-link
-          v-for="policy in filteredAndSortedPolicies"
+          v-for="policy in filteredPolicies"
           :key="policy.id"
           :to="`/policy/${policy.id}`"
           class="bg-white rounded-2xl shadow-md hover:shadow-xl transition-all p-8 border-2 border-transparent hover:border-blue-200 group"
@@ -112,7 +112,7 @@
 
           <div class="flex flex-wrap gap-2">
             <span
-              v-for="tag in policy.tags.slice(0, 4)"
+              v-for="tag in (policy.tags || []).slice(0, 4)"
               :key="tag"
               class="px-3 py-1 bg-gray-100 text-gray-600 rounded-lg text-sm"
             >
@@ -121,7 +121,7 @@
           </div>
         </router-link>
 
-        <div v-if="!policyStore.loading && filteredAndSortedPolicies.length === 0" class="col-span-2 text-center py-20 bg-white rounded-2xl shadow-md">
+        <div v-if="!policyStore.loading && filteredPolicies.length === 0" class="col-span-2 text-center py-20 bg-white rounded-2xl shadow-md">
           <div class="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
             <Search :size="40" class="text-gray-400" />
           </div>
@@ -159,14 +159,16 @@
 </template>
 
 <script setup>
-import { Search, Filter, X, Heart } from 'lucide-vue-next';
+import { Search, Filter, X } from 'lucide-vue-next';
 import { ref, computed, onMounted, watch } from 'vue';
 import { usePolicyStore } from '../stores/policyStore';
+import { useAuthStore } from '../stores/authStore';
+import { useRouter } from 'vue-router';
 
 const policyStore = usePolicyStore();
 const authStore = useAuthStore();
 const router = useRouter();
-const browseState = policyStore.browseState;
+
 const searchTerm = ref('');
 const selectedCategory = ref('');
 const selectedRegion = ref('');
@@ -178,7 +180,7 @@ const categories = [
   { label: '전체', value: '' },
   { label: '일자리', value: '일자리' },
   { label: '교육', value: '교육' },
-  { label: '복지문화', value: '복지문화' },
+  { label: '복지/문화', value: '복지/문화' },
   { label: '건강', value: '건강' },
   { label: '생활지원', value: '생활지원' },
   { label: '재무/법률', value: '재무/법률' },
@@ -207,7 +209,6 @@ const regions = [
   { label: '경상북도', value: '경상북도' },
   { label: '경상남도', value: '경상남도' },
   { label: '제주특별자치도', value: '제주특별자치도' },
-  { label: '기타', value: '기타' },
 ];
 
 const loadPage = () => {
@@ -227,34 +228,9 @@ onMounted(() => {
   }
 });
 
-const toggleWishlist = async (policyId) => {
-  if (!authStore.isAuthenticated) {
-    alert('로그인 후 이용해주세요.');
-    return;
-  }
-  try {
-    await policyStore.toggleWishlist(policyId);
-  } catch (err) {
-    const message = err?.message || '';
-    if (message.toLowerCase().includes('credentials')) {
-      alert('로그인 후 이용해주세요.');
-      return;
-    }
-    alert(message || '관심정책 처리에 실패했습니다.');
-  }
-};
-
-
-onMounted(() => {
-  loadPage();
-});
-
-const filteredAndSortedPolicies = computed(() => policyStore.policies || []);
+const filteredPolicies = computed(() => policyStore.policies || []);
 
 const resetFilters = () => {
-  browseState.searchTerm = '';
-  browseState.selectedCategory = '';
-  browseState.selectedRegion = '';
   searchTerm.value = '';
   selectedCategory.value = '';
   selectedRegion.value = '';

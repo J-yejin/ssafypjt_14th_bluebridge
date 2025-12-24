@@ -198,8 +198,7 @@ export const usePolicyStore = defineStore('policy', () => {
   const getById = (id) => policies.value.find((p) => String(p.id) === String(id));
 
   const loadPolicies = async (filters = {}, options = {}) => {
-    const { force = false } = options;
-    if (hasLoaded.value && !force) return;
+    const { force = true } = options; // 기본적으로 항상 새로 불러온다
     loading.value = true;
     error.value = null;
     try {
