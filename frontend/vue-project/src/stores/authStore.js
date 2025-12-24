@@ -6,6 +6,26 @@ export const useAuthStore = defineStore('auth', () => {
   const refresh = ref(localStorage.getItem('refresh') || '');
   const username = ref(localStorage.getItem('username') || '');
 
+  const parseJwtPayload = (token = '') => {
+    try {
+      const [, payload] = token.split('.');
+      if (!payload) return null;
+      const base64 = payload.replace(/-/g, '+').replace(/_/g, '/');
+      const padded = base64 + '='.repeat((4 - (base64.length % 4)) % 4);
+      return JSON.parse(atob(padded));
+    } catch (_) {
+      return null;
+    }
+  };
+
+  const isTokenExpired = (token = '') => {
+    if (!token) return true;
+    const payload = parseJwtPayload(token);
+    if (!payload?.exp) return false;
+    const now = Math.floor(Date.now() / 1000);
+    return payload.exp <= now;
+  };
+
   const isAuthenticated = computed(() => Boolean(access.value));
 
   const setTokens = (tokens = {}) => {
@@ -37,6 +57,12 @@ export const useAuthStore = defineStore('auth', () => {
     localStorage.removeItem('username');
   };
 
+  const validateTokens = () => {
+    if (access.value && isTokenExpired(access.value)) {
+      clearTokens();
+    }
+  };
+
   return {
     access,
     refresh,
@@ -45,5 +71,6 @@ export const useAuthStore = defineStore('auth', () => {
     setTokens,
     setUsername,
     clearTokens,
+    validateTokens,
   };
 });

@@ -96,9 +96,23 @@
         <router-link
           v-for="policy in filteredPolicies"
           :key="policy.id"
-          :to="`/policy/${policy.id}`"
-          class="bg-white rounded-2xl shadow-md hover:shadow-xl transition-all p-8 border-2 border-transparent hover:border-blue-200 group"
+          :to="{ path: `/policy/${policy.id}`, query: { page: String(currentPage) } }"
+          class="bg-white rounded-2xl shadow-md hover:shadow-xl transition-all p-8 border-2 border-transparent hover:border-blue-200 group relative"
         >
+          <button
+            type="button"
+            class="absolute z-10 h-10 w-10 rounded-full bg-white shadow-md flex items-center justify-center hover:scale-105 transition-transform"
+            style="right: 2rem; bottom: calc(35% - 40px);"
+            :aria-pressed="isWishlisted(policy.id)"
+            @click.stop.prevent="toggleWishlist(policy.id)"
+            title="관심 정책"
+          >
+            <Heart
+              :size="20"
+              :stroke="isWishlisted(policy.id) ? '#ef4444' : '#16a34a'"
+              :fill="isWishlisted(policy.id) ? '#ef4444' : 'none'"
+            />
+          </button>
           <div class="flex items-start justify-between mb-4">
             <div class="flex items-center gap-3">
               <span class="px-4 py-1.5 bg-blue-100 text-blue-700 rounded-full">
@@ -159,14 +173,15 @@
 </template>
 
 <script setup>
-import { Search, Filter, X } from 'lucide-vue-next';
+import { Search, Filter, X, Heart } from 'lucide-vue-next';
 import { ref, computed, onMounted, watch } from 'vue';
 import { usePolicyStore } from '../stores/policyStore';
 import { useAuthStore } from '../stores/authStore';
-import { useRouter } from 'vue-router';
+import { useRoute, useRouter } from 'vue-router';
 
 const policyStore = usePolicyStore();
 const authStore = useAuthStore();
+const route = useRoute();
 const router = useRouter();
 
 const searchTerm = ref('');
@@ -221,7 +236,20 @@ const loadPage = () => {
   });
 };
 
+const parsePage = (value) => {
+  const page = Number(value);
+  if (!Number.isFinite(page) || page < 1) return 1;
+  return Math.floor(page);
+};
+
+const updatePageQuery = (page, replace = false) => {
+  const nextQuery = { ...route.query, page: String(page) };
+  const method = replace ? router.replace : router.push;
+  method({ path: route.path, query: nextQuery });
+};
+
 onMounted(() => {
+  currentPage.value = parsePage(route.query.page);
   loadPage();
   if (authStore.isAuthenticated) {
     policyStore.loadWishlist();
@@ -230,12 +258,32 @@ onMounted(() => {
 
 const filteredPolicies = computed(() => policyStore.policies || []);
 
+const isWishlisted = (policyId) => policyStore.isWishlisted(policyId);
+
+const toggleWishlist = async (policyId) => {
+  if (!authStore.isAuthenticated) {
+    alert('로그인 후 이용해주세요.');
+    return;
+  }
+  try {
+    await policyStore.toggleWishlist(policyId);
+  } catch (err) {
+    const message = err?.message || '';
+    if (message.toLowerCase().includes('credentials')) {
+      alert('로그인 후 이용해주세요.');
+      return;
+    }
+    alert(message || '관심정책 처리에 실패했습니다.');
+  }
+};
+
 const resetFilters = () => {
   searchTerm.value = '';
   selectedCategory.value = '';
   selectedRegion.value = '';
   sortBy.value = 'title';
   currentPage.value = 1;
+  updatePageQuery(1, true);
   loadPage();
 };
 
@@ -249,11 +297,23 @@ const changePage = (page) => {
   const target = Math.min(Math.max(1, page), totalPages.value);
   if (target === currentPage.value) return;
   currentPage.value = target;
+  updatePageQuery(target);
   loadPage();
 };
 
 watch([searchTerm, selectedCategory, selectedRegion, sortBy], () => {
   currentPage.value = 1;
+  updatePageQuery(1, true);
   loadPage();
 });
+
+watch(
+  () => route.query.page,
+  (value) => {
+    const page = parsePage(value);
+    if (page === currentPage.value) return;
+    currentPage.value = page;
+    loadPage();
+  }
+);
 </script>

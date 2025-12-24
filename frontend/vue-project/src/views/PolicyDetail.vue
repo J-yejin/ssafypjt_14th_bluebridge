@@ -2,7 +2,7 @@
   <div class="min-h-screen">
     <div class="max-w-[1200px] mx-auto px-8 lg:px-12 py-12">
       <router-link
-        to="/browse"
+        :to="{ path: '/browse', query: browseQuery }"
         class="flex items-center gap-2 text-blue-600 hover:text-blue-700 mb-8 inline-flex px-4 py-2 hover:bg-blue-50 rounded-lg transition-all"
       >
         <ArrowLeft :size="20" />
@@ -15,7 +15,10 @@
 
       <div v-else-if="!policy" class="bg-white rounded-2xl p-12 text-center shadow-lg">
         <p class="text-gray-600 text-lg">정책을 찾을 수 없습니다.</p>
-        <router-link to="/browse" class="text-blue-600 hover:text-blue-700 mt-6 inline-block text-lg">
+        <router-link
+          :to="{ path: '/browse', query: browseQuery }"
+          class="text-blue-600 hover:text-blue-700 mt-6 inline-block text-lg"
+        >
           정책 목록으로 돌아가기
         </router-link>
       </div>
@@ -184,6 +187,11 @@ const policyId = computed(() => (route.params.id ? String(route.params.id) : '')
 const policy = computed(() => policyStore.getById(policyId.value));
 const loading = computed(() => policyStore.loading);
 const isWishlisted = computed(() => policyStore.isWishlisted(policyId.value));
+const browseQuery = computed(() => {
+  const page = Number(route.query.page);
+  if (!Number.isFinite(page) || page < 1) return {};
+  return { page: String(Math.floor(page)) };
+});
 const detailLink = computed(() => {
   const p = policy.value;
   if (!p) return '';

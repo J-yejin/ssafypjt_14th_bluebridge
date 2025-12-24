@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <nav class="bg-white/90 backdrop-blur-lg border-b border-blue-100/50 sticky top-0 z-50 shadow-sm">
     <div class="max-w-[1400px] mx-auto px-8 lg:px-12">
       <div class="flex justify-between items-center h-20">
@@ -101,7 +101,7 @@
 
 <script setup>
 import { useRoute, useRouter } from 'vue-router';
-import { computed } from 'vue';
+import { computed, watch } from 'vue';
 import { Search, Sparkles, User, Home } from 'lucide-vue-next';
 import { useAuthStore } from '../stores/authStore';
 import { useUserStore } from '../stores/userStore';
@@ -113,6 +113,15 @@ const isProfileActive = computed(() => route.path.startsWith('/profile'));
 const authStore = useAuthStore();
 const userStore = useUserStore();
 const isLoggedIn = computed(() => authStore.isAuthenticated);
+
+watch(
+  () => route.path,
+  () => {
+    authStore.validateTokens();
+  },
+  { immediate: true }
+);
+
 const profileLabel = computed(() => (userStore.isProfileComplete ? '마이 페이지' : '프로필'));
 
 const handleLogout = () => {
