@@ -41,11 +41,10 @@ export const useBoardStore = defineStore('board', () => {
     error.value = null;
     try {
       const data = await createBoard(payload);
-      // 목록 최신화
       boards.value = [data, ...boards.value];
       return data;
     } catch (err) {
-      error.value = err.message || '게시글을 작성하지 못했습니다.';
+      error.value = err.message || '게시글 등록에 실패했습니다.';
       throw err;
     } finally {
       loading.value = false;
@@ -62,7 +61,7 @@ export const useBoardStore = defineStore('board', () => {
       }
       return data;
     } catch (err) {
-      error.value = err.message || '댓글을 작성하지 못했습니다.';
+      error.value = err.message || '댓글 등록에 실패했습니다.';
       throw err;
     } finally {
       loading.value = false;
@@ -78,7 +77,7 @@ export const useBoardStore = defineStore('board', () => {
         current.value.comments = current.value.comments.filter((c) => c.id !== commentId);
       }
     } catch (err) {
-      error.value = err.message || '댓글을 삭제하지 못했습니다.';
+      error.value = err.message || '댓글 삭제에 실패했습니다.';
       throw err;
     } finally {
       loading.value = false;
