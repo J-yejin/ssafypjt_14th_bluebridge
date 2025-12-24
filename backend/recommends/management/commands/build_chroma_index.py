@@ -1,6 +1,7 @@
 ﻿import hashlib
 
 import chromadb
+from typing import List
 from django.core.management.base import BaseCommand
 
 from recommends.engine import (
@@ -98,6 +99,7 @@ class Command(BaseCommand):
                     "policy_type": _normalize_meta_value(p.policy_type),
                     "region_scope": _normalize_meta_value(p.region_scope),
                     "region_sido": _normalize_meta_value(p.region_sido),
+                    "applicable_regions": _normalize_meta_value(getattr(p, "applicable_regions", None)),
                     "min_age": p.min_age,
                     "max_age": p.max_age,
                     "employment": _normalize_meta_value(p.employment),

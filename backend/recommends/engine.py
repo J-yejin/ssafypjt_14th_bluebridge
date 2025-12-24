@@ -1,6 +1,7 @@
 ﻿import os
 from typing import Dict, List, Optional
 
+import math
 import requests
 from django.conf import settings
 from django.db.models import Q
@@ -41,20 +42,26 @@ def get_chroma_collection():
     return vector_db.get_or_create_collection(COLLECTION_NAME)
 
 
-def embed_texts(texts: List[str]) -> List[List[float]]:
-    """Call Gemini embedding (one-by-one to be safe)."""
+def embed_texts(texts: List[str], mode: str = "document") -> List[List[float]]:
+    """
+    Call Gemini embedding (one-by-one to be safe).
+    mode: "document" -> RETRIEVAL_DOCUMENT, "query" -> RETRIEVAL_QUERY (fallback: SEMANTIC_SIMILARITY)
+    """
     api_key = _get_gms_key()
     headers = {
         "Content-Type": "application/json",
         "x-goog-api-key": api_key,
     }
+    task_type = "RETRIEVAL_DOCUMENT"
+    if mode == "query":
+        task_type = "RETRIEVAL_QUERY"
 
     embeddings: List[List[float]] = []
     for text in texts:
         payload = {
             "model": GEMINI_EMBED_MODEL,
             "content": {"parts": [{"text": text}]},
-            "taskType": "RETRIEVAL_DOCUMENT",
+            "taskType": task_type,
         }
         resp = requests.post(GEMINI_EMBED_URL, headers=headers, json=payload, timeout=30)
         resp.raise_for_status()
@@ -67,11 +74,14 @@ def embed_texts(texts: List[str]) -> List[List[float]]:
 
 
 def build_embedding_text(policy: Policy, max_chars: int = 3500) -> str:
+    """
+    임베딩 입력을 summary 중심으로 구성하고 title은 보조로 둡니다.
+    """
     parts = []
-    if policy.title:
-        parts.append(policy.title)
     if policy.summary:
         parts.append(policy.summary)
+    if policy.title:
+        parts.append(policy.title)
     if policy.policy_detail:
         parts.append(policy.policy_detail)
     text = "\n".join([p for p in parts if p])
@@ -128,8 +138,7 @@ def search_with_chroma(
 
     def _chroma_query(where=None):
         try:
-            collection = get_chroma_collection()
-            [query_embedding] = embed_texts([combined_query])
+            [query_embedding] = embed_texts([combined_query], mode="query")
             result = vector_db.query(
                 query_embeddings=[query_embedding],
                 where=where if where else None,
@@ -170,31 +179,54 @@ def _safe_list(val) -> List[str]:
         return val
     return [val]
 
-# 특수대상 중 매칭을 강제할 키워드
-FORCE_SPECIAL_TARGET_KEYS = {
-    "장애",
-    "장애인",
-    "보훈",
-    "보훈대상자",
+# 정책 대상(강제 필터링) 키워드 목록
+POLICY_TARGET_FORCE_KEYS = {
     "국가유공자",
-    "국가 유공자",
-    "저소득",
-    "저소득층",
-    "한부모",
-    "차상위",
-    "생계급여",
-    "기초생활",
+    "장애인", "장애",
+    "보훈가족", "보훈대상자", "보훈",
+    "한부모가정", "한부모·조손",
+    "저소득층", "저소득","기초생활수급자"
+    "다자녀",
+    "군인",
+    "농업인",
+    "다문화·탈북민",
+    "여성",
+    "한부모·조손"
+}
+
+# 프로필 점수를 0~10으로 변환할 때 사용할 기준값 (가산치 합이 5 내외이므로 5를 상한으로 사용)
+PROFILE_SCORE_MAX = 5.0
+GENDER_KEYWORDS = {
+    "male": {"남성", "남자"},
+    "female": {"여성", "여자"},
 }
 
 
-def _requires_special_match(targets: List[str]) -> bool:
+def _requires_policy_target(targets: List[str]) -> bool:
     """
-    정책의 특수대상 목록에 강제 매칭이 필요한 키워드가 포함되면 True.
+    정책의 특수대상(정책 대상) 목록에 강제 매칭이 필요한 키워드가 포함되면 True.
     """
-    lowered = [str(t).lower() for t in targets or []]
-    for key in FORCE_SPECIAL_TARGET_KEYS:
-        if any(key in t for t in lowered):
+    lowered = [str(t).strip().lower() for t in targets or []]
+    for key in POLICY_TARGET_FORCE_KEYS:
+        lkey = key.lower()
+        if any(lkey in t for t in lowered):
             return True
+    return False
+
+
+def _gender_mismatch(policy_targets: List[str], profile_gender: Optional[str]) -> bool:
+    """
+    정책 특수대상에 성별 키워드가 있으면 프로필 성별과 불일치 시 True.
+    프로필 성별이 없으면 성별 지정 정책은 제외.
+    """
+    if not policy_targets:
+        return False
+    lowered = {str(t).strip().lower() for t in policy_targets}
+    for g, keys in GENDER_KEYWORDS.items():
+        if any(k in lowered for k in keys):
+            if not profile_gender:
+                return True
+            return profile_gender.lower() != g
     return False
 
 
@@ -221,7 +253,7 @@ def profile_match_score(policy: Policy, profile: Optional[Profile]) -> float:
     # employment / major / special target
     if profile.employment_status and policy.employment:
         if profile.employment_status in _safe_list(policy.employment):
-            score += 1.2
+            score += 0.6
 
     if profile.major and policy.major:
         if profile.major in _safe_list(policy.major):
@@ -231,17 +263,14 @@ def profile_match_score(policy: Policy, profile: Optional[Profile]) -> float:
         intersect = set(profile.special_targets).intersection(set(_safe_list(policy.special_target)))
         if intersect:
             score += 0.8
-        elif _requires_special_match(_safe_list(policy.special_target)):
+        elif _requires_policy_target(_safe_list(policy.special_target)):
             penalties += 1.0
     # 정책에 강제 매칭 특수대상이 있는데 프로필에 없음 -> 패널티
     if policy.special_target and not profile.special_targets:
-        if _requires_special_match(_safe_list(policy.special_target)):
+        if _requires_policy_target(_safe_list(policy.special_target)):
             penalties += 0.8
 
-    # gender / income_quintile / education_level 일부 반영
-    if profile.gender and policy.special_target:
-        if profile.gender in _safe_list(policy.special_target):
-            score += 0.5
+    # income_quintile / education_level 일부 반영
     if profile.income_quintile and policy.special_target:
         if profile.income_quintile in _safe_list(policy.special_target):
             score += 0.3
@@ -252,11 +281,11 @@ def profile_match_score(policy: Policy, profile: Optional[Profile]) -> float:
     # interest -> keywords/service_type match
     if profile.interest:
         keywords = _safe_list(getattr(policy, "keywords", []))
-        service_type = getattr(policy, "service_type", None)
+        category = getattr(policy, "category", None)
         if any(profile.interest in str(k) for k in keywords):
+            score += 1.0
+        if category and profile.interest in str(category):
             score += 0.6
-        if service_type and profile.interest in str(service_type):
-            score += 0.4
 
     # age soft check
     if profile.age is not None:
@@ -271,6 +300,14 @@ def profile_match_score(policy: Policy, profile: Optional[Profile]) -> float:
     return score - penalties
 
 
+def _to_score_10(value: float, max_value: float = 1.0) -> float:
+    """Clamp and scale any metric to 0~10."""
+    if max_value <= 0:
+        return 0.0
+    scaled = (value / max_value) * 10.0
+    return round(max(0.0, min(10.0, scaled)), 1)
+
+
 def rerank_with_profile(
     policies: List[Policy],
     distances: List[float],
@@ -281,16 +318,33 @@ def rerank_with_profile(
     """Hybrid rerank with higher emphasis on query similarity."""
     scored = []
     for policy, dist in zip(policies, distances):
-        # 강제 매칭 특수대상 불일치 시 제외
-        if profile and policy.special_target:
-            requires_match = _requires_special_match(_safe_list(policy.special_target))
-            if requires_match:
-                intersects = set(_safe_list(policy.special_target)).intersection(set(profile.special_targets or []))
-                if not intersects:
-                    continue
+        # 정책 대상(강제 필터) 불일치 시 제외
+        policy_targets = {str(t).strip().lower() for t in _safe_list(getattr(policy, "special_target", []))}
+        requires_match = _requires_policy_target(policy_targets)
+        policy.policy_target_required = requires_match
+        policy.policy_target_match = None
+
+        if requires_match:
+            if not profile or not getattr(profile, "special_targets", None):
+                policy.policy_target_match = False
+                continue
+            profile_targets = {str(t).strip().lower() for t in (profile.special_targets or [])}
+            intersects = policy_targets.intersection(profile_targets)
+            policy.policy_target_match = bool(intersects)
+            if not policy.policy_target_match:
+                continue
+        else:
+            policy.policy_target_match = True
+
+        # 성별 지정 정책인데 프로필 성별 불일치 -> 제외
+        if profile and _gender_mismatch(list(policy_targets), getattr(profile, "gender", None)):
+            continue
 
         sim = 1.0 / (1.0 + dist) if dist is not None else 0.0
         pscore = profile_match_score(policy, profile)
+
+        policy.similarity_score_10 = _to_score_10(sim, 1.0)
+        policy.profile_score_10 = _to_score_10(max(pscore, 0.0), PROFILE_SCORE_MAX)
         hybrid = weight_profile * pscore + weight_similarity * sim
         policy.profile_score = pscore
         policy.query_similarity = sim
@@ -302,21 +356,24 @@ def rerank_with_profile(
 
 
 def assign_ux_scores(policies: List[Policy]) -> List[Policy]:
-    """Map hybrid_score to 0-100 UX score (flat 50 when all equal)."""
+    """
+    Map hybrid_score to 0-100 UX score using softmax for 안정적 분포.
+    """
     if not policies:
         return policies
 
-    hybrids = [getattr(p, "hybrid_score", 0.0) for p in policies]
-    min_s = min(hybrids)
-    max_s = max(hybrids)
+    hybrids = [float(getattr(p, "hybrid_score", 0.0)) for p in policies]
+    max_h = max(hybrids)
+    exp_scores = [math.exp(h - max_h) for h in hybrids]
+    denom = sum(exp_scores)
 
-    def normalize(x: float) -> int:
-        if max_s == min_s:
-            return 50
-        return round((x - min_s) / (max_s - min_s) * 100)
+    if denom == 0:
+        for policy in policies:
+            policy.ux_score = 50
+        return policies
 
-    for policy, h in zip(policies, hybrids):
-        policy.ux_score = normalize(h)
+    for policy, exp_s in zip(policies, exp_scores):
+        policy.ux_score = round((exp_s / denom) * 100)
     return policies
 
 

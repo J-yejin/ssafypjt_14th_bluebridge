@@ -186,7 +186,7 @@ const steps = [
   },
   {
     key: 'specialTargets',
-    title: '지원대상에 해당하나요?',
+    title: '정책 대상에 해당하나요?',
     type: 'multi',
     options: specialTargetOptions,
     required: false,

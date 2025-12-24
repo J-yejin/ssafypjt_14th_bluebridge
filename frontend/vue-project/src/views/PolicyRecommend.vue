@@ -62,14 +62,16 @@
             <Sparkles :size="24" class="text-white" />
           </div>
           <div class="flex-1">
-            <h2 class="text-blue-900 mb-2 text-2xl">AI 정책 검색</h2>
-            <p class="text-gray-600 text-lg">구체적인 조건을 적을수록 더 정확히 찾아줘요.</p>
+            <h2 class="text-blue-900 mb-2 text-2xl">AI에게 궁금한 정책을 물어보세요</h2>
+            <p class="text-gray-600 text-lg">
+              분야(주거/창업/교육) + 대상(청년/대학생/저소득 등) + 혜택(장비비/대출/장학금)만 적어도 충분해요.
+            </p>
           </div>
         </div>
         <div class="flex gap-6">
           <input
             type="text"
-            :placeholder="queryExamples[0] || '예) 서울 26세 미취업자 주거 지원 정책 추천'"
+            placeholder="예) 분야:창업 | 대상:청년 | 혜택:장비 구입비 지원"
             v-model="ragQuery"
             @keypress.enter="handleRagSearch"
             class="flex-1 px-6 py-4 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent text-lg"
@@ -81,17 +83,20 @@
             <Sparkles :size="24" />
             <span>검색</span>
           </button>
+          <div v-if="ragLoading" class="flex items-center gap-2 text-sm text-cyan-700 bg-cyan-50 border border-cyan-100 px-3 py-1.5 rounded-full">
+            <Sparkles :size="16" class="animate-pulse" />
+            <span>텍스트 검색 추천 찾는 중...</span>
+          </div>
         </div>
-        <div v-if="queryExamples.length" class="mt-3 flex flex-wrap gap-2 text-sm text-gray-500">
+        <div v-if="queryExamples.length" class="mt-3 flex flex-wrap gap-2 text-sm text-gray-500 items-center">
           <span class="text-gray-400">예시</span>
-          <button
+          <span
             v-for="ex in queryExamples"
             :key="ex"
-            @click="ragQuery = ex; handleRagSearch()"
-            class="px-3 py-1 rounded-full bg-blue-50 text-blue-700 hover:bg-blue-100 transition"
+            class="px-3 py-1 rounded-full bg-blue-50 text-blue-700"
           >
             {{ ex }}
-          </button>
+          </span>
         </div>
       </div>
 
@@ -114,11 +119,22 @@
           >
             <div class="flex items-center justify-between">
               <span class="text-xs font-semibold px-3 py-1 rounded-full bg-blue-50 text-blue-700">추천</span>
-              <span class="text-sm font-semibold text-blue-600">적합도 {{ card.ux_score ?? '—' }}점</span>
             </div>
             <router-link :to="`/policy/${card.id}`" class="text-xl font-semibold text-blue-900 hover:text-blue-700">
               {{ card.title }}
             </router-link>
+            <div class="flex flex-wrap gap-2 text-xs text-gray-600">
+              <span class="px-2 py-1 rounded-full bg-gray-100">유사도 {{ formatScore(card.similarity_score_10) }}</span>
+              <span
+                v-if="card.policy_target_required"
+                :class="[
+                  'px-2 py-1 rounded-full',
+                  card.policy_target_match ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
+                ]"
+              >
+                정책 대상 {{ card.policy_target_match ? '충족' : '미충족' }}
+              </span>
+            </div>
             <p class="text-gray-600 text-sm leading-relaxed line-clamp-3">
               {{ card.reason || '추천 이유를 불러오는 중입니다.' }}
             </p>
@@ -170,12 +186,9 @@
       <div>
         <div class="flex items-center gap-3 mb-3">
           <h2 class="text-blue-900 text-3xl">프로필 기반 추천</h2>
-          <div
-            v-if="pageLoading"
-            class="flex items-center gap-2 text-sm text-blue-700 bg-blue-50 border border-blue-100 px-3 py-1.5 rounded-full"
-          >
+          <div v-if="profileLoading" class="flex items-center gap-2 text-sm text-blue-700 bg-blue-50 border border-blue-100 px-3 py-1.5 rounded-full">
             <Sparkles :size="16" class="animate-pulse" />
-            <span>추천을 불러오는 중...</span>
+            <span>프로필 기반 추천 찾는 중...</span>
           </div>
         </div>
         <div v-if="profileBasedRecommendations.length > 0" class="grid lg:grid-cols-2 gap-8">
@@ -195,7 +208,20 @@
               <span class="text-gray-500 bg-gray-50 px-3 py-1 rounded-full text-sm">{{ policy.region }}</span>
             </div>
             <h3 class="text-blue-900 mb-3 text-2xl group-hover:text-blue-700 transition-colors">{{ policy.title }}</h3>
-  
+
+            <div class="flex flex-wrap gap-2 text-xs text-gray-600 mb-3">
+              <span class="px-2 py-1 rounded-full bg-gray-100">프로필 {{ formatScore(policy.profile_score_10) }}</span>
+              <span
+                v-if="policy.policy_target_required"
+                :class="[
+                  'px-2 py-1 rounded-full',
+                  policy.policy_target_match ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
+                ]"
+              >
+                정책 대상 {{ policy.policy_target_match ? '충족' : '미충족' }}
+              </span>
+            </div>
+
             <div class="flex flex-wrap gap-2">
               <span
                 v-for="tag in policy.tags"
@@ -241,14 +267,15 @@ const ragBasedRecommendations = ref([]);
 const recommendedFromApi = ref([]);
 const top3Cards = ref([]);
 const queryExamples = ref([]);
-const pageLoading = ref(false);
+const profileLoading = ref(false);
+const ragLoading = ref(false);
 
 const loadRecommendations = async () => {
-  pageLoading.value = true;
+  profileLoading.value = true;
   if (!userStore.isProfileComplete) {
     recommendedFromApi.value = [];
     top3Cards.value = [];
-    pageLoading.value = false;
+    profileLoading.value = false;
     return;
   }
   // 기본 추천: backend /recommend/ (GET)
@@ -256,7 +283,7 @@ const loadRecommendations = async () => {
   recommendedFromApi.value = data?.results || [];
   // 기본 로드는 리스트만, Top3는 사용자 질의 이후 노출
   queryExamples.value = (data?.query_examples || []).slice(0, 2);
-  pageLoading.value = false;
+  profileLoading.value = false;
 };
 
 onMounted(async () => {
@@ -278,6 +305,13 @@ const profileBasedRecommendations = computed(() => {
   return recommendedFromApi.value || [];
 });
 
+const formatScore = (val) => {
+  if (val === null || val === undefined) return '—';
+  const num = Number(val);
+  if (!Number.isFinite(num)) return '—';
+  return Number(num.toFixed(1));
+};
+
 const handleRagSearch = () => {
   const query = ragQuery.value.trim();
   if (!query) {
@@ -286,17 +320,20 @@ const handleRagSearch = () => {
     return;
   }
   (async () => {
-    pageLoading.value = true;
-    const data = await request('/recommend/detail/', {
-      method: 'POST',
-      body: JSON.stringify({ query }),
-    });
-    ragBasedRecommendations.value = data?.results || [];
-    showRagResults.value = true;
-    // RAG top3가 있으면 하이라이트 교체
-    top3Cards.value = data?.top3?.length ? data.top3 : top3Cards.value;
-    queryExamples.value = (data?.query_examples || []).slice(0, 2) || queryExamples.value;
-    pageLoading.value = false;
+    ragLoading.value = true;
+    try {
+      const data = await request('/recommend/detail/', {
+        method: 'POST',
+        body: JSON.stringify({ query }),
+      });
+      ragBasedRecommendations.value = data?.results || [];
+      showRagResults.value = true;
+      // RAG top3가 있으면 하이라이트 교체
+      top3Cards.value = data?.top3?.length ? data.top3 : top3Cards.value;
+      queryExamples.value = (data?.query_examples || []).slice(0, 2) || queryExamples.value;
+    } finally {
+      ragLoading.value = false;
+    }
   })();
 };
 

@@ -16,8 +16,11 @@ from .engine import (
 from .models import RecommendationLog
 
 QUERY_EXAMPLES = [
-    "서울 거주 26세 미취업자 주거 지원 정책 추천해줘",
-    "여성 대학원생 장학금·학자금 지원 알려줘",
+    "분야:창업 | 대상:청년 | 혜택:장비 구입비 지원",
+    "분야:교육 | 대상:대학원생 | 혜택:등록금·장학금",
+    "분야:주거 | 대상:청년 | 혜택:전세/월세 대출·이자지원",
+    "분야:보건 | 대상:저소득 | 혜택:의료비/건강검진 바우처",
+    "분야:취업 | 대상:군 전역 예정자 | 혜택:직업훈련 바우처",
 ]
 
 
@@ -76,7 +79,8 @@ def recommend_list(request):
 
     policy_ids, scores = search_with_chroma(query_text=query_text, profile=profile, top_k=10)
     policies = fetch_policies_by_ids(policy_ids)
-    reranked = rerank_with_profile(policies, scores, profile)
+    # 프로필 피드: 프로필 점수 중심으로 정렬 (쿼리 유사도 영향 최소화)
+    reranked = rerank_with_profile(policies, scores, profile, weight_profile=1.0, weight_similarity=0.0)
     reranked = assign_ux_scores(reranked)
 
     dist_map = {pid: dist for pid, dist in zip(policy_ids, scores)}
@@ -92,6 +96,10 @@ def recommend_list(request):
                 "id": p.id,
                 "title": p.title,
                 "ux_score": getattr(p, "ux_score", None),
+                "similarity_score_10": getattr(p, "similarity_score_10", None),
+                "profile_score_10": getattr(p, "profile_score_10", None),
+                "policy_target_required": getattr(p, "policy_target_required", False),
+                "policy_target_match": getattr(p, "policy_target_match", None),
                 "reason": reason_map.get(p.id),
             }
         )
@@ -102,6 +110,7 @@ def recommend_list(request):
             "distances": ordered_distances,
             "top3": top3_cards,
             "query_examples": QUERY_EXAMPLES,
+            "echo_query": query_text,
         }
     )
 
@@ -119,10 +128,13 @@ def recommend_detail(request):
         return Response({"detail": "query 필드가 비어있습니다"}, status=400)
 
     profile, _ = Profile.objects.get_or_create(user=request.user)
-    policy_ids, scores = search_with_chroma(query_text=query, profile=profile, top_k=10)
+    # 더 넓은 후보(최대 50개)에서 유사도 중심으로 상위 10 추려서 사용
+    policy_ids, scores = search_with_chroma(query_text=query, profile=profile, top_k=50)
     policies = fetch_policies_by_ids(policy_ids)
-    reranked = rerank_with_profile(policies, scores, profile)
+    # 검색 모드: 유사도 우선(0.9), 프로필 보조(0.1)
+    reranked = rerank_with_profile(policies, scores, profile, weight_profile=0.1, weight_similarity=0.9)
     reranked = assign_ux_scores(reranked)
+    reranked = reranked[:10]
 
     dist_map = {pid: dist for pid, dist in zip(policy_ids, scores)}
     serializer = PolicyBasicSerializer(reranked, many=True)
@@ -137,6 +149,10 @@ def recommend_detail(request):
                 "id": p.id,
                 "title": p.title,
                 "ux_score": getattr(p, "ux_score", None),
+                "similarity_score_10": getattr(p, "similarity_score_10", None),
+                "profile_score_10": getattr(p, "profile_score_10", None),
+                "policy_target_required": getattr(p, "policy_target_required", False),
+                "policy_target_match": getattr(p, "policy_target_match", None),
                 "reason": reason_map.get(p.id),
             }
         )
@@ -147,7 +163,16 @@ def recommend_detail(request):
             query=query,
             profile_snapshot=_profile_snapshot(profile),
             recommended_policy_ids=[p.id for p in reranked],
-            ux_scores={str(p.id): getattr(p, "ux_score", None) for p in reranked},
+            ux_scores={
+                str(p.id): {
+                    "ux": getattr(p, "ux_score", None),
+                    "sim10": getattr(p, "similarity_score_10", None),
+                    "profile10": getattr(p, "profile_score_10", None),
+                    "policy_target_required": getattr(p, "policy_target_required", False),
+                    "policy_target_match": getattr(p, "policy_target_match", None),
+                }
+                for p in reranked
+            },
         )
     except Exception:
         pass
@@ -157,6 +182,6 @@ def recommend_detail(request):
             "results": serializer.data,
             "distances": ordered_distances,
             "top3": top3_cards,
-            "query_examples": QUERY_EXAMPLES,
+            "echo_query": query,
         }
     )
