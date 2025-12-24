@@ -25,6 +25,20 @@
         <div class="bg-gradient-to-r from-blue-500 via-blue-600 to-cyan-500 px-12 py-16 text-white relative overflow-hidden">
           <div class="absolute top-0 right-0 w-96 h-96 bg-white/10 rounded-full -mr-48 -mt-48" />
           <div class="absolute bottom-0 left-0 w-80 h-80 bg-white/10 rounded-full -ml-40 -mb-40" />
+          <button
+            type="button"
+            class="absolute bottom-0 right-0 z-20 p-1 hover:scale-105 transition-transform"
+            :aria-pressed="isWishlisted"
+            @click="handleWishlistToggle"
+            title="관심 정책"
+            style="transform: translate(-18px, -8px);"
+          >
+            <Heart
+              :size="26"
+              :stroke="isWishlisted ? '#ef4444' : '#16a34a'"
+              :fill="isWishlisted ? '#ef4444' : 'none'"
+            />
+          </button>
           <div class="relative">
             <div class="flex items-center gap-4 mb-6">
               <span class="px-5 py-2 bg-white/20 backdrop-blur rounded-xl text-lg">
@@ -158,15 +172,18 @@
 <script setup>
 import { computed, onMounted } from 'vue';
 import { useRoute } from 'vue-router';
-import { ArrowLeft, Calendar, Users, CheckCircle2, ExternalLink } from 'lucide-vue-next';
+import { ArrowLeft, Calendar, Users, CheckCircle2, ExternalLink, Heart } from 'lucide-vue-next';
 import { usePolicyStore } from '../stores/policyStore';
+import { useAuthStore } from '../stores/authStore';
 
 const route = useRoute();
 const policyStore = usePolicyStore();
+const authStore = useAuthStore();
 
-const policyId = computed(() => route.params.id);
+const policyId = computed(() => (route.params.id ? String(route.params.id) : ''));
 const policy = computed(() => policyStore.getById(policyId.value));
 const loading = computed(() => policyStore.loading);
+const isWishlisted = computed(() => policyStore.isWishlisted(policyId.value));
 const detailLink = computed(() => {
   const p = policy.value;
   if (!p) return '';
@@ -266,8 +283,28 @@ const handleShare = async () => {
 };
 
 onMounted(() => {
-  if (!policy.value) {
+  if (policyId.value && !policy.value) {
     policyStore.loadPolicyById(policyId.value);
   }
+  if (authStore.isAuthenticated) {
+    policyStore.loadWishlist();
+  }
 });
+
+const handleWishlistToggle = async () => {
+  if (!authStore.isAuthenticated) {
+    alert('로그인 후 이용해주세요.');
+    return;
+  }
+  try {
+    await policyStore.toggleWishlist(policyId.value);
+  } catch (err) {
+    const message = err?.message || '';
+    if (message.toLowerCase().includes('credentials')) {
+      alert('로그인 후 이용해주세요.');
+      return;
+    }
+    alert(message || '관심정책 처리에 실패했습니다.');
+  }
+};
 </script>

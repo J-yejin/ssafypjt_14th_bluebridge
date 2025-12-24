@@ -73,6 +73,23 @@ export async function saveProfile(profile) {
   });
 }
 
+export async function fetchWishlist() {
+  return request('/policies/wishlist/');
+}
+
+export async function createWishlist(policyId) {
+  return request('/policies/wishlist/', {
+    method: 'POST',
+    body: JSON.stringify({ policy_id: policyId }),
+  });
+}
+
+export async function deleteWishlist(policyId) {
+  return request(`/policies/wishlist/${policyId}/`, {
+    method: 'DELETE',
+  });
+}
+
 export async function login(payload) {
   return request('/auth/login/', {
     method: 'POST',
