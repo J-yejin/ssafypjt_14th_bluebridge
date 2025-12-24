@@ -161,7 +161,14 @@
             <Search :size="40" class="text-gray-400" />
           </div>
           <p class="text-gray-500 text-lg mb-2">프로필에 맞는 정책을 찾지 못했어요.</p>
-          <p class="text-gray-400">관심사나 지역을 바꿔 검색해 보세요.</p>
+          <p class="text-gray-400 mb-6">관심사나 지역을 바꿔 검색해 보세요.</p>
+          <router-link
+            to="/profile/edit"
+            class="inline-flex items-center gap-2 bg-gradient-to-r from-blue-500 to-cyan-500 text-white px-6 py-3 rounded-xl hover:shadow-lg transition-all text-base shadow-md"
+          >
+            나의 프로필로 이동
+            <ArrowRight :size="18" />
+          </router-link>
         </div>
       </div>
     </div>
