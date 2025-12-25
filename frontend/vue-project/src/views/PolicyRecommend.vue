@@ -91,6 +91,21 @@
             <span>검색</span>
           </button>
         </div>
+        <div class="mt-3 text-sm text-gray-500 flex flex-wrap gap-3">
+          <span class="text-gray-600">예시:</span>
+          <button
+            v-for="example in ['등록금 지원 대학생', '서울 청년 월세 지원', '창업 자금 보증', '저소득층 의료비 지원']"
+            :key="example"
+            type="button"
+            class="px-3 py-1 rounded-full bg-gray-100 text-gray-600 hover:bg-gray-200 transition"
+            @click="ragQuery = example; handleRagSearch();"
+          >
+            {{ example }}
+          </button>
+        </div>
+        <p class="mt-2 text-xs text-gray-500">
+          대상·분야·혜택·지역을 함께 적으면 더 정확한 결과를 받을 수 있어요. (예: “서울 청년 전세 대출”, “학자금 대출 이자 지원”)
+        </p>
       </div>
 
       <!-- RAG Results -->
@@ -268,20 +283,18 @@ const ragLoading = ref(false);
 const ragMeta = ref({});
 const recommendedFromApi = ref([]);
 const profileLoading = ref(false);
-const profileTop3 = ref([]);
 const profileMeta = ref({});
-const ragTop3 = ref([]);
 const ragReasonMap = computed(() => {
   const map = {};
-  ragTop3.value.forEach((item) => {
-    map[String(item.id)] = item.reason;
+  ragBasedRecommendations.value.forEach((item) => {
+    if (item?.reason) map[String(item.id)] = item.reason;
   });
   return map;
 });
 const profileReasonMap = computed(() => {
   const map = {};
-  profileTop3.value.forEach((item) => {
-    map[String(item.id)] = item.reason;
+  recommendedFromApi.value.forEach((item) => {
+    if (item?.reason) map[String(item.id)] = item.reason;
   });
   return map;
 });
@@ -297,11 +310,9 @@ const loadRecommendations = async () => {
   try {
     const payload = await policyStore.recommendPolicies();
     recommendedFromApi.value = payload?.results || [];
-    profileTop3.value = payload?.top3 || [];
     profileMeta.value = payload?.meta || {};
   } catch (_) {
     recommendedFromApi.value = [];
-    profileTop3.value = [];
     profileMeta.value = {};
   } finally {
     profileLoading.value = false;
@@ -365,14 +376,12 @@ const handleRagSearch = () => {
   ragMeta.value = {};
   policyStore
     .recommendPoliciesByQuery(query)
-    .then(({ results, top3, meta }) => {
+    .then(({ results, meta }) => {
       ragBasedRecommendations.value = results || [];
-      ragTop3.value = top3 || [];
       ragMeta.value = meta || {};
     })
     .catch(() => {
       ragBasedRecommendations.value = [];
-      ragTop3.value = [];
       ragMeta.value = {};
     })
     .finally(() => {

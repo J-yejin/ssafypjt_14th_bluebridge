@@ -72,14 +72,15 @@ const normalizeDate = (value) => {
 };
 
 const normalizeRecommendResponse = (data) => {
-  if (!data) return { results: [], top3: [], meta: {} };
-  if (Array.isArray(data)) return { results: data, top3: [], meta: {} };
+  if (!data) return { results: [], meta: {} };
+  if (Array.isArray(data)) return { results: data, meta: {} };
   const results = Array.isArray(data.results) ? data.results : [];
-  const top3 = Array.isArray(data.top3) ? data.top3 : [];
-  const echoQuery = data.echo_query || data.echoQuery || '';
-  const queryExamples = data.query_examples || data.queryExamples || [];
-  const distances = Array.isArray(data.distances) ? data.distances : [];
-  return { results, top3, meta: { distances, echoQuery, queryExamples } };
+  const meta = {
+    type: data.type,
+    query: data.query,
+    queryExamples: data.query_examples || data.queryExamples || [],
+  };
+  return { results, meta };
 };
 
 const transformPolicy = (p) => {
@@ -298,13 +299,23 @@ export const usePolicyStore = defineStore('policy', () => {
     error.value = null;
     try {
       const payload = normalizeRecommendResponse(await fetchRecommendList());
-      return {
-        ...payload,
-        results: payload.results.map(transformPolicy).filter(Boolean),
-      };
+      const mapped = payload.results
+        .map((item) => {
+          const policy = item.policy || item;
+          const transformed = transformPolicy(policy);
+          if (!transformed) return null;
+          return {
+            ...transformed,
+            raw: policy,
+            reason: item.reason || '',
+            score: item.score ?? null,
+          };
+        })
+        .filter(Boolean);
+      return { results: mapped, meta: payload.meta };
     } catch (err) {
       error.value = err.message || 'Failed to load recommendations.';
-      return { results: [], top3: [], meta: {} };
+      return { results: [], meta: {} };
     } finally {
       loading.value = false;
     }
@@ -315,13 +326,23 @@ export const usePolicyStore = defineStore('policy', () => {
     error.value = null;
     try {
       const payload = normalizeRecommendResponse(await fetchRecommendDetail(query));
-      return {
-        ...payload,
-        results: payload.results.map(transformPolicy).filter(Boolean),
-      };
+      const mapped = payload.results
+        .map((item) => {
+          const policy = item.policy || item;
+          const transformed = transformPolicy(policy);
+          if (!transformed) return null;
+          return {
+            ...transformed,
+            raw: policy,
+            reason: item.reason || '',
+            score: item.score ?? null,
+          };
+        })
+        .filter(Boolean);
+      return { results: mapped, meta: payload.meta };
     } catch (err) {
       error.value = err.message || 'Failed to load recommendations.';
-      return { results: [], top3: [], meta: {} };
+      return { results: [], meta: {} };
     } finally {
       loading.value = false;
     }
