@@ -70,7 +70,7 @@ frontend/vue-project/
 * 필수 타겟 정책(장애/보훈/저소득/한부모/군인) 불일치 시 제외
 * 정책에 성별 키워드가 있을 경우에만 성별 매칭
 * 사용자 쿼리를 임베딩 유사도 기반으로 분석한 뒤 관련 정책을 추천
-![추천 기능2](screenshots/recommend1.PNG)
+![추천 기능2](screenshots/recommend.PNG)
 * 프로필 기반 스코어링 후 상위 정책 추천
 ![추천 기능](screenshots/recommend2.PNG)
 
