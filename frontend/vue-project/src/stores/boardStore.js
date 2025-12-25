@@ -6,6 +6,7 @@ import {
   createBoard,
   createComment,
   deleteComment,
+  fetchMyComments,
   toggleBoardLike,
   updateBoard,
   deleteBoard,
@@ -14,6 +15,7 @@ import {
 export const useBoardStore = defineStore('board', () => {
   const boards = ref([]);
   const current = ref(null);
+  const myComments = ref([]);
   const loading = ref(false);
   const error = ref(null);
 
@@ -93,6 +95,19 @@ export const useBoardStore = defineStore('board', () => {
     }
   };
 
+  const loadMyComments = async () => {
+    loading.value = true;
+    error.value = null;
+    try {
+      const data = await fetchMyComments();
+      myComments.value = data || [];
+    } catch (err) {
+      error.value = err.message || '?ì¸? ??ê¸€ ???ë€?œ ì½ê¸°???¤íŒ¨?ˆìŠµ?ˆë‹¤.';
+    } finally {
+      loading.value = false;
+    }
+  };
+
   const editBoard = async (id, payload) => {
     loading.value = true;
     error.value = null;
@@ -162,10 +177,12 @@ export const useBoardStore = defineStore('board', () => {
   return {
     boards,
     current,
+    myComments,
     loading,
     error,
     loadBoards,
     loadBoardById,
+    loadMyComments,
     addBoard,
     editBoard,
     removeBoard,

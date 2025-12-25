@@ -13,6 +13,17 @@ class CommentSerializer(serializers.ModelSerializer):
         read_only_fields = ["id", "user", "created_at"]
 
 
+class CommentListSerializer(serializers.ModelSerializer):
+    user = serializers.CharField(source="user.username", read_only=True)
+    board_id = serializers.IntegerField(source="board.id", read_only=True)
+    board_title = serializers.CharField(source="board.title", read_only=True)
+    board_category = serializers.CharField(source="board.category", read_only=True)
+
+    class Meta:
+        model = Comment
+        fields = ["id", "user", "content", "created_at", "board_id", "board_title", "board_category"]
+        read_only_fields = ["id", "user", "created_at", "board_id", "board_title", "board_category"]
+
 class BoardSerializer(serializers.ModelSerializer):
     user = serializers.CharField(source="user.username", read_only=True)
     like_count = serializers.IntegerField(read_only=True)
