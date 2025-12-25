@@ -15,12 +15,12 @@
         </div>
       </div>
 
-      <div class="prose max-w-none text-gray-700 whitespace-pre-line leading-relaxed">
+      <div class="prose max-w-none text-gray-700 whitespace-pre-line leading-relaxed mb-6">
         {{ boardStore.current.content }}
       </div>
 
       <!-- 댓글 -->
-      <div v-if="!isNotice" class="pt-6 border-t border-gray-100">
+      <div v-if="!isNotice" class="pt-10 border-t border-gray-100">
         <h2 class="text-xl font-semibold text-blue-900 mb-4">댓글</h2>
         <div v-if="sortedComments.length === 0" class="text-gray-500 mb-4">첫 댓글을 남겨주세요.</div>
         <ul class="space-y-4">
@@ -36,7 +36,7 @@
                 <button
                   v-if="comment.user === authStore.username"
                   type="button"
-                  class="text-red-500 hover:underline"
+                  class="text-red-500 hover:underline cursor-pointer"
                   @click="handleDeleteComment(comment.id)"
                 >
                   삭제
@@ -59,7 +59,7 @@
               <button
                 v-if="isAuthor"
                 type="button"
-                class="px-5 py-2.5 rounded-lg border border-gray-200 text-gray-700 hover:bg-gray-50 transition"
+                class="px-5 py-2.5 rounded-lg border border-gray-200 text-gray-700 hover:bg-gray-50 transition cursor-pointer"
                 @click="handleEditPost"
               >
                 게시글 수정
@@ -67,7 +67,7 @@
               <button
                 v-if="isAuthor"
                 type="button"
-                class="px-5 py-2.5 rounded-lg border border-red-200 text-red-600 hover:bg-red-50 transition"
+                class="px-5 py-2.5 rounded-lg border border-red-200 text-red-600 hover:bg-red-50 transition cursor-pointer"
                 @click="handleDeletePost"
               >
                 게시글 삭제
@@ -75,7 +75,7 @@
               <button
                 type="button"
                 v-if="!isAuthor"
-                class="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg border border-gray-200 text-gray-600 hover:bg-gray-50 transition"
+                class="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg border border-gray-200 text-gray-600 hover:bg-gray-50 transition cursor-pointer"
                 :class="boardStore.current?.is_liked ? 'border-rose-200 bg-rose-50 text-rose-500' : ''"
                 @click="handleToggleLike"
               >
@@ -94,9 +94,18 @@
               <button
                 type="button"
                 @click="handleAddComment"
-                class="px-5 py-2.5 rounded-lg bg-gradient-to-r from-blue-500 to-cyan-500 text-white shadow-md hover:shadow-lg transition"
+                class="px-5 py-2.5 rounded-lg bg-gradient-to-r from-blue-500 to-cyan-500 text-white shadow-md hover:shadow-lg transition cursor-pointer"
               >
                 &#45843;&#44544; &#46321;&#47197;
+              </button>
+            </div>
+            <div class="flex justify-start mt-6 pt-3 border-t border-gray-100">
+              <button
+                type="button"
+                class="px-5 py-2.5 rounded-lg border border-blue-200 text-blue-700 hover:bg-blue-50 transition cursor-pointer"
+                @click="handleGoBack"
+              >
+                &#47785;&#47197;&#51004;&#47196; &#46028;&#50500;&#44032;&#44592;
               </button>
             </div>
           </div>
@@ -173,6 +182,10 @@ const handleAddComment = async () => {
   } catch (err) {
     alert(err?.message || '댓글 등록에 실패했습니다.');
   }
+};
+
+const handleGoBack = () => {
+  router.back();
 };
 
 const handleToggleLike = async () => {

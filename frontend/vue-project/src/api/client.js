@@ -23,7 +23,10 @@ async function request(path, options = {}) {
       if (errJson?.code === 'token_not_valid') {
         localStorage.removeItem('access');
         localStorage.removeItem('refresh');
+        localStorage.removeItem('username');
+        localStorage.removeItem('is_staff');
         detail = '로그인이 만료되었습니다. 다시 로그인해 주세요.';
+        window.location.reload();
       } else if (errJson?.detail) {
         detail = typeof errJson.detail === 'string' ? errJson.detail : JSON.stringify(errJson.detail);
       } else if (errJson && Object.keys(errJson).length) {
