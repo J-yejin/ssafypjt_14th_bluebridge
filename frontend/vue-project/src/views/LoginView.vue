@@ -44,7 +44,7 @@ const handleLogin = async () => {
   error.value = '';
   try {
     const data = await login({ username: username.value, password: password.value });
-    authStore.setTokens({ access: data?.access, refresh: data?.refresh });
+    authStore.setTokens({ access: data?.access, refresh: data?.refresh, isStaff: data?.is_staff });
     authStore.setUsername(username.value);
     router.push('/profile');
   } catch (e) {
