@@ -36,6 +36,9 @@ def board_list(request):
 
         serializer = BoardSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
+        category = serializer.validated_data.get("category")
+        if category == "notice" and not request.user.is_staff:
+            return Response({"detail": "Admin only"}, status=403)
         serializer.save(user=request.user)
         return Response(serializer.data, status=201)
 
