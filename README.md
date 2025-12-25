@@ -192,7 +192,7 @@ frontend/vue-project/
 
 ---
 ## 7. Diagram
-![Diagram](screenshots/diagram.jpg)
+![Diagram](screenshots/Diagram.jpg)
 
 ---
 
