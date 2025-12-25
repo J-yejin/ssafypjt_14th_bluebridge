@@ -71,6 +71,18 @@ const normalizeDate = (value) => {
   return m ? m[1] : v;
 };
 
+const normalizeRecommendResponse = (data) => {
+  if (!data) return { results: [], meta: {} };
+  if (Array.isArray(data)) return { results: data, meta: {} };
+  const results = Array.isArray(data.results) ? data.results : [];
+  const meta = {
+    type: data.type,
+    query: data.query,
+    queryExamples: data.query_examples || data.queryExamples || [],
+  };
+  return { results, meta };
+};
+
 const transformPolicy = (p) => {
   if (!p) return null;
 
@@ -286,32 +298,51 @@ export const usePolicyStore = defineStore('policy', () => {
     loading.value = true;
     error.value = null;
     try {
-      const data = await fetchRecommendList();
-      if (Array.isArray(data)) {
-        return data.map(transformPolicy).filter(Boolean);
-      }
+      const payload = normalizeRecommendResponse(await fetchRecommendList());
+      const mapped = payload.results
+        .map((item) => {
+          const policy = item.policy || item;
+          const transformed = transformPolicy(policy);
+          if (!transformed) return null;
+          return {
+            ...transformed,
+            raw: policy,
+            reason: item.reason || '',
+            score: item.score ?? null,
+          };
+        })
+        .filter(Boolean);
+      return { results: mapped, meta: payload.meta };
     } catch (err) {
-      error.value = err.message || '추천 결과를 불러오지 못했습니다';
-      return [];
+      error.value = err.message || 'Failed to load recommendations.';
+      return { results: [], meta: {} };
     } finally {
       loading.value = false;
     }
-    return [];
   };
 
   const recommendPoliciesByQuery = async (query) => {
     loading.value = true;
     error.value = null;
     try {
-      const data = await fetchRecommendDetail(query);
-      const results = Array.isArray(data?.results)
-        ? data.results.map(transformPolicy).filter(Boolean)
-        : [];
-      const top3 = Array.isArray(data?.top3) ? data.top3 : [];
-      return { results, top3 };
+      const payload = normalizeRecommendResponse(await fetchRecommendDetail(query));
+      const mapped = payload.results
+        .map((item) => {
+          const policy = item.policy || item;
+          const transformed = transformPolicy(policy);
+          if (!transformed) return null;
+          return {
+            ...transformed,
+            raw: policy,
+            reason: item.reason || '',
+            score: item.score ?? null,
+          };
+        })
+        .filter(Boolean);
+      return { results: mapped, meta: payload.meta };
     } catch (err) {
-      error.value = err.message || '추천 결과를 불러오지 못했습니다';
-      return { results: [], top3: [] };
+      error.value = err.message || 'Failed to load recommendations.';
+      return { results: [], meta: {} };
     } finally {
       loading.value = false;
     }

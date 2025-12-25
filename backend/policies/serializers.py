@@ -107,7 +107,27 @@ class PolicyBasicSerializer(serializers.ModelSerializer):
     ux_score = serializers.IntegerField(read_only=True, default=None)
     profile_score = serializers.FloatField(read_only=True, default=None)
     query_similarity = serializers.FloatField(read_only=True, default=None)
+    similarity_score_10 = serializers.FloatField(read_only=True, default=None)
+    profile_score_10 = serializers.FloatField(read_only=True, default=None)
+    policy_target_required = serializers.SerializerMethodField()
+    policy_target_match = serializers.SerializerMethodField()
     detail_link = serializers.SerializerMethodField()
+    employment_requirements = serializers.SerializerMethodField()
+    education_requirements = serializers.SerializerMethodField()
+    major_requirements = serializers.SerializerMethodField()
+    special_target = serializers.SerializerMethodField()
+    target_detail = serializers.SerializerMethodField()
+    detail_links = serializers.ListField(child=serializers.CharField(), read_only=True, allow_null=True)
+    applicable_regions = serializers.ListField(child=serializers.CharField(), read_only=True, allow_null=True)
+    provider = serializers.CharField(read_only=True, allow_null=True, allow_blank=True)
+    category = serializers.CharField(read_only=True, allow_null=True, allow_blank=True)
+    apply_method = serializers.CharField(read_only=True, allow_null=True, allow_blank=True)
+    policy_detail = serializers.CharField(read_only=True, allow_null=True, allow_blank=True)
+    region_scope = serializers.CharField(read_only=True, allow_null=True, allow_blank=True)
+    min_age = serializers.IntegerField(read_only=True, allow_null=True)
+    max_age = serializers.IntegerField(read_only=True, allow_null=True)
+    start_date = serializers.DateField(read_only=True, allow_null=True)
+    end_date = serializers.DateField(read_only=True, allow_null=True)
 
     class Meta:
         model = Policy
@@ -116,15 +136,35 @@ class PolicyBasicSerializer(serializers.ModelSerializer):
             "title",
             "summary",
             "source",
+            "policy_type",
+            "category",
+            "provider",
             "region_sido",
             "region_sigungu",
             "start_date",
+            "region_scope",
+            "applicable_regions",
+            "min_age",
+            "max_age",
             "end_date",
             "status",
             "ux_score",
             "profile_score",
             "query_similarity",
+            "similarity_score_10",
+            "profile_score_10",
+            "policy_target_required",
+            "policy_target_match",
             "detail_link",
+            "detail_links",
+            "apply_method",
+            "policy_detail",
+            "employment_requirements",
+            "education_requirements",
+            "major_requirements",
+            "special_target",
+            "target_detail",
+            "start_date",
         ]
 
     def get_detail_link(self, obj):
@@ -132,6 +172,29 @@ class PolicyBasicSerializer(serializers.ModelSerializer):
         if isinstance(links, list) and links:
             return links[0]
         return None
+
+    def get_policy_target_required(self, obj):
+        return getattr(obj, "policy_target_required", False)
+
+    def get_policy_target_match(self, obj):
+        return getattr(obj, "policy_target_match", None)
+
+    def get_employment_requirements(self, obj):
+        return _list_or_empty(getattr(obj, "employment", []))
+
+    def get_education_requirements(self, obj):
+        return _list_or_empty(getattr(obj, "education", []))
+
+    def get_major_requirements(self, obj):
+        return _list_or_empty(getattr(obj, "major", []))
+
+    def get_special_target(self, obj):
+        base = _list_or_empty(getattr(obj, "special_target", []))
+        detail = _list_or_empty(getattr(obj, "target_detail", []))
+        return base + detail
+
+    def get_target_detail(self, obj):
+        return _list_or_empty(getattr(obj, "target_detail", []))
 
 
 class WishlistCreateSerializer(serializers.ModelSerializer):

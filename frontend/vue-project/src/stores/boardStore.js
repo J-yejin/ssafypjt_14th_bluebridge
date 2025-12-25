@@ -6,6 +6,8 @@ import {
   createBoard,
   createComment,
   deleteComment,
+  fetchMyComments,
+  toggleBoardLike,
   updateBoard,
   deleteBoard,
 } from '../api/client';
@@ -13,6 +15,7 @@ import {
 export const useBoardStore = defineStore('board', () => {
   const boards = ref([]);
   const current = ref(null);
+  const myComments = ref([]);
   const loading = ref(false);
   const error = ref(null);
 
@@ -92,6 +95,19 @@ export const useBoardStore = defineStore('board', () => {
     }
   };
 
+  const loadMyComments = async () => {
+    loading.value = true;
+    error.value = null;
+    try {
+      const data = await fetchMyComments();
+      myComments.value = data || [];
+    } catch (err) {
+      error.value = err.message || '?ì¸? ??ê¸€ ???ë€?œ ì½ê¸°???¤íŒ¨?ˆìŠµ?ˆë‹¤.';
+    } finally {
+      loading.value = false;
+    }
+  };
+
   const editBoard = async (id, payload) => {
     loading.value = true;
     error.value = null;
@@ -128,18 +144,51 @@ export const useBoardStore = defineStore('board', () => {
   // alias to avoid stale HMR instances missing the action
   const deleteBoardAction = removeBoard;
 
+  const toggleLike = async (boardId) => {
+    loading.value = true;
+    error.value = null;
+    try {
+      const data = await toggleBoardLike(boardId);
+      if (current.value?.id === boardId) {
+        current.value = {
+          ...current.value,
+          is_liked: data?.liked ?? current.value?.is_liked,
+          like_count: data?.like_count ?? current.value?.like_count,
+        };
+      }
+      boards.value = boards.value.map((b) =>
+        b.id === boardId
+          ? {
+              ...b,
+              is_liked: data?.liked ?? b.is_liked,
+              like_count: data?.like_count ?? b.like_count,
+            }
+          : b
+      );
+      return data;
+    } catch (err) {
+      error.value = err.message || '좋아요 처리에 실패했습니다.';
+      throw err;
+    } finally {
+      loading.value = false;
+    }
+  };
+
   return {
     boards,
     current,
+    myComments,
     loading,
     error,
     loadBoards,
     loadBoardById,
+    loadMyComments,
     addBoard,
     editBoard,
     removeBoard,
     deleteBoardAction,
     addComment,
     removeComment,
+    toggleLike,
   };
 });

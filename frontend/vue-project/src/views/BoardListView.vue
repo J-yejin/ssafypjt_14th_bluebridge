@@ -28,13 +28,18 @@
             <p>총 게시물: {{ filteredBoards.length }}건</p>
           </div>
           <div class="actions">
+            <select v-model="sortKey" class="sort-select">
+              <option v-for="option in sortOptions" :key="option.value" :value="option.value">
+                {{ option.label }}
+              </option>
+            </select>
             <input
               v-model="searchTerm"
               type="text"
               class="search-input"
               placeholder="검색어를 입력하세요"
             />
-            <router-link v-if="authStore.isAuthenticated" to="/boards/new" class="write-btn">
+            <router-link v-if="canWrite" to="/boards/new" class="write-btn">
               글 작성
             </router-link>
           </div>
@@ -57,10 +62,9 @@
               class="table-row"
               @click="handleSelect(board.id)"
             >
-              <span class="col-number">{{ board.id }}</span>
+              <span class="col-number">{{ displayNumber(board) }}</span>
               <div class="col-title">
                 <span class="title-text">{{ board.title }}</span>
-                <span class="badge">{{ displayCategory(board.category) }}</span>
               </div>
               <span class="col-author">{{ board.user || '익명' }}</span>
               <span class="col-date">{{ formatDate(board.created_at) }}</span>
@@ -85,6 +89,12 @@ const router = useRouter();
 
 const selectedCategory = ref('all');
 const searchTerm = ref('');
+const sortKey = ref('latest');
+
+const sortOptions = [
+  { value: 'latest', label: '\uCD5C\uC2E0\uC21C' },
+  { value: 'likes', label: '\uC88B\uC544\uC694\uC21C' },
+]; 
 
 const categories = [
   { label: '전체', value: 'all' },
@@ -92,6 +102,12 @@ const categories = [
   { label: '자료실', value: 'review' },
   { label: '자유게시판', value: 'free' },
 ];
+
+const canWrite = computed(() => {
+  if (!authStore.isAuthenticated) return false;
+  if (selectedCategory.value === 'notice') return authStore.isStaff;
+  return true;
+});
 
 const formatDate = (value) => {
   if (!value) return '';
@@ -127,8 +143,48 @@ const filteredBoards = computed(() => {
         (b.user || '').toLowerCase().includes(q)
     );
   }
+  const compareByDate = (a, b) => new Date(b.created_at) - new Date(a.created_at);
+  const likeCount = (item) => item?.likes ?? item?.like_count ?? 0;
+  const compareBySortKey =
+    sortKey.value === "likes"
+      ? (a, b) => likeCount(b) - likeCount(a) || compareByDate(a, b)
+      : compareByDate;
+  const categoryPriority = (item) => {
+    const category = (item.category || '').toLowerCase();
+    if (category === 'notice') return 0;
+    if (category === 'review') return 1;
+    return 2;
+  };
+  if (selectedCategory.value === 'all') {
+    list = [...list].sort(
+      (a, b) => categoryPriority(a) - categoryPriority(b) || compareBySortKey(a, b)
+    );
+  } else {
+    list = [...list].sort(compareBySortKey);
+  }
   return list;
 });
+
+
+const freeNumberMap = computed(() => {
+  let count = 0;
+  const map = new Map();
+  filteredBoards.value.forEach((board) => {
+    const category = (board.category || '').toLowerCase();
+    if (category === 'free' || category === 'question') {
+      count += 1;
+      map.set(board.id, count);
+    }
+  });
+  return map;
+});
+
+const displayNumber = (board) => {
+  const category = (board.category || '').toLowerCase();
+  if (category === 'notice') return '\uACF5\uC9C0';
+  if (category === 'review') return '\uC790\uB8CC\uC2E4';
+  return freeNumberMap.value.get(board.id) || '-';
+};
 
 const handleSelect = (id) => {
   if (!authStore.isAuthenticated) {
@@ -291,6 +347,16 @@ watch(
   padding: 10px 12px;
   min-width: 200px;
   outline: none;
+}
+
+.sort-select {
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  padding: 10px 12px;
+  min-width: 120px;
+  outline: none;
+  background: #fff;
+  color: #374151;
 }
 
 .write-btn {

@@ -5,6 +5,7 @@ export const useAuthStore = defineStore('auth', () => {
   const access = ref(localStorage.getItem('access') || '');
   const refresh = ref(localStorage.getItem('refresh') || '');
   const username = ref(localStorage.getItem('username') || '');
+  const isStaff = ref(localStorage.getItem('is_staff') === 'true');
 
   const parseJwtPayload = (token = '') => {
     const parts = token.split('.');
@@ -39,6 +40,10 @@ export const useAuthStore = defineStore('auth', () => {
       refresh.value = tokens.refresh;
       localStorage.setItem('refresh', tokens.refresh);
     }
+    if (typeof tokens.isStaff === 'boolean') {
+      isStaff.value = tokens.isStaff;
+      localStorage.setItem('is_staff', String(tokens.isStaff));
+    }
   };
 
   const setUsername = (name = '') => {
@@ -54,19 +59,23 @@ export const useAuthStore = defineStore('auth', () => {
     access.value = '';
     refresh.value = '';
     username.value = '';
+    isStaff.value = false;
     localStorage.removeItem('access');
     localStorage.removeItem('refresh');
     localStorage.removeItem('username');
+    localStorage.removeItem('is_staff');
   };
 
   const syncAuthState = () => {
     const storedAccess = localStorage.getItem('access') || '';
     const storedRefresh = localStorage.getItem('refresh') || '';
     const storedUsername = localStorage.getItem('username') || '';
+    const storedIsStaff = localStorage.getItem('is_staff') === 'true';
 
     if (access.value !== storedAccess) access.value = storedAccess;
     if (refresh.value !== storedRefresh) refresh.value = storedRefresh;
     if (username.value !== storedUsername) username.value = storedUsername;
+    if (isStaff.value !== storedIsStaff) isStaff.value = storedIsStaff;
 
     if (storedAccess && isTokenExpired(storedAccess)) {
       clearTokens();
@@ -79,6 +88,7 @@ export const useAuthStore = defineStore('auth', () => {
     access,
     refresh,
     username,
+    isStaff,
     isAuthenticated,
     setTokens,
     setUsername,
