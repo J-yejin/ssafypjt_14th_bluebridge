@@ -36,6 +36,9 @@ const error = ref('');
 const router = useRouter();
 const authStore = useAuthStore();
 
+const invalidCredentialsMessage = '\uC544\uC774\uB514 \uB610\uB294 \uBE44\uBC00\uBC88\uD638\uAC00 \uC798\uBABB \uB418\uC5C8\uC2B5\uB2C8\uB2E4. \uC544\uC774\uB514\uC640 \uBE44\uBC00\uBC88\uD638\uB97C \uC815\uD655\uD788 \uC785\uB825\uD574 \uC8FC\uC138\uC694';
+const loginErrorMessage = '\uB85C\uADF8\uC778 \uC911 \uC624\uB958\uAC00 \uBC1C\uC0DD\uD588\uC2B5\uB2C8\uB2E4';
+
 const handleLogin = async () => {
   loading.value = true;
   error.value = '';
@@ -45,7 +48,17 @@ const handleLogin = async () => {
     authStore.setUsername(username.value);
     router.push('/profile');
   } catch (e) {
-    error.value = e.message || '로그인에 실패했습니다';
+    let parsed = null;
+    try {
+      parsed = JSON.parse(e.message || '');
+    } catch (_) {
+      parsed = null;
+    }
+    if (parsed?.non_field_errors?.length) {
+      error.value = invalidCredentialsMessage;
+    } else {
+      error.value = e.message || loginErrorMessage;
+    }
   } finally {
     loading.value = false;
   }

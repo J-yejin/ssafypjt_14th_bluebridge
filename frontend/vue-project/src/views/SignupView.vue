@@ -6,7 +6,15 @@
       <form @submit.prevent="handleSignup" class="form">
         <label>
           아이디
-          <input v-model="username" type="text" required placeholder="아이디" />
+          <input
+            v-model="username"
+            type="text"
+            required
+            :placeholder="usernamePlaceholder"
+            @blur="handleUsernameCheck"
+            @keydown.enter.prevent="handleUsernameCheck"
+          />
+          <p v-if="fieldErrors.username" class="field-error">{{ fieldErrors.username }}</p>
         </label>
         <label>
           비밀번호
@@ -58,7 +66,7 @@
 <script setup>
 import { ref } from 'vue';
 import { useRouter } from 'vue-router';
-import { signup, login } from '../api/client';
+import { signup, login, checkUsername } from '../api/client';
 import { useAuthStore } from '../stores/authStore';
 
 const username = ref('');
@@ -69,8 +77,12 @@ const region = ref('');
 const selectedInterests = ref([]);
 const loading = ref(false);
 const error = ref('');
+const fieldErrors = ref({});
 const router = useRouter();
 const authStore = useAuthStore();
+
+const usernamePlaceholder = '\uC544\uC774\uB514';
+const duplicateUsernameMessage = '\uC911\uBCF5\uB41C \uC544\uC774\uB514\uC785\uB2C8\uB2E4.';
 
 const interestOptions = ['취업', '주거', '교육', '문화', '건강', '지역', '창업'];
 
@@ -104,6 +116,24 @@ const toggleInterest = (interest) => {
   }
 };
 
+const handleUsernameCheck = async () => {
+  const value = username.value.trim();
+  if (!value) {
+    fieldErrors.value = { ...fieldErrors.value, username: '' };
+    return;
+  }
+  try {
+    const resp = await checkUsername(value);
+    if (resp?.available === false) {
+      fieldErrors.value = { ...fieldErrors.value, username: duplicateUsernameMessage };
+    } else {
+      fieldErrors.value = { ...fieldErrors.value, username: '' };
+    }
+  } catch (_) {
+    // Ignore availability check errors to avoid blocking signup.
+  }
+};
+
 const handleSignup = async () => {
   if (password.value !== passwordConfirm.value) {
     error.value = '비밀번호가 일치하지 않습니다';
@@ -115,6 +145,7 @@ const handleSignup = async () => {
   }
   loading.value = true;
   error.value = '';
+  fieldErrors.value = {};
   try {
     await signup({
       username: username.value,
@@ -131,7 +162,17 @@ const handleSignup = async () => {
     // 기본 이동: 홈으로 이동, 정책 추천 시 온보딩 진입
     router.push('/');
   } catch (e) {
-    error.value = e.message || '회원가입 중 오류가 발생했습니다';
+    let parsed = null;
+    try {
+      parsed = JSON.parse(e.message || '');
+    } catch (_) {
+      parsed = null;
+    }
+    if (parsed?.username?.length) {
+      fieldErrors.value = { username: duplicateUsernameMessage };
+    } else {
+      error.value = e.message || '\uD68C\uC6D0\uAC00\uC785 \uC911 \uC624\uB958\uAC00 \uBC1C\uC0DD\uD588\uC2B5\uB2C8\uB2E4';
+    }
   } finally {
     loading.value = false;
   }
@@ -206,6 +247,11 @@ select:focus {
   color: #dc2626;
   font-size: 14px;
   margin: 4px 0 0;
+}
+.field-error {
+  color: #dc2626;
+  font-size: 13px;
+  margin: 2px 0 0;
 }
 .field-group {
   display: grid;

@@ -1,10 +1,14 @@
 <template>
-  <div class="min-h-screen bg-gradient-to-br from-blue-50 via-cyan-50 to-white">
+  <div class="min-h-screen bg-gradient-to-br from-blue-50 via-cyan-50 to-white flex flex-col">
     <Navbar />
-    <router-view />
+    <main class="flex-1">
+      <router-view />
+    </main>
+    <SiteFooter />
   </div>
 </template>
 
 <script setup>
 import Navbar from './components/Navbar.vue';
+import SiteFooter from './components/SiteFooter.vue';
 </script>
