@@ -28,6 +28,11 @@
             <p>총 게시물: {{ filteredBoards.length }}건</p>
           </div>
           <div class="actions">
+            <select v-model="sortKey" class="sort-select">
+              <option v-for="option in sortOptions" :key="option.value" :value="option.value">
+                {{ option.label }}
+              </option>
+            </select>
             <input
               v-model="searchTerm"
               type="text"
@@ -57,7 +62,7 @@
               class="table-row"
               @click="handleSelect(board.id)"
             >
-              <span class="col-number">{{ board.id }}</span>
+              <span class="col-number">{{ displayNumber(board) }}</span>
               <div class="col-title">
                 <span class="title-text">{{ board.title }}</span>
                 <span class="badge">{{ displayCategory(board.category) }}</span>
@@ -85,6 +90,12 @@ const router = useRouter();
 
 const selectedCategory = ref('all');
 const searchTerm = ref('');
+const sortKey = ref('latest');
+
+const sortOptions = [
+  { value: 'latest', label: '\uCD5C\uC2E0\uC21C' },
+  { value: 'likes', label: '\uC88B\uC544\uC694\uC21C' },
+]; 
 
 const categories = [
   { label: '전체', value: 'all' },
@@ -127,8 +138,36 @@ const filteredBoards = computed(() => {
         (b.user || '').toLowerCase().includes(q)
     );
   }
+  const compareByDate = (a, b) => new Date(b.created_at) - new Date(a.created_at);
+  if (sortKey.value === "likes") {
+    const likeCount = (item) => item?.likes ?? item?.like_count ?? 0;
+    list = [...list].sort((a, b) => likeCount(b) - likeCount(a) || compareByDate(a, b));
+  } else {
+    list = [...list].sort(compareByDate);
+  }
   return list;
 });
+
+
+const freeNumberMap = computed(() => {
+  let count = 0;
+  const map = new Map();
+  filteredBoards.value.forEach((board) => {
+    const category = (board.category || '').toLowerCase();
+    if (category === 'free' || category === 'question') {
+      count += 1;
+      map.set(board.id, count);
+    }
+  });
+  return map;
+});
+
+const displayNumber = (board) => {
+  const category = (board.category || '').toLowerCase();
+  if (category === 'notice') return '\uACF5\uC9C0';
+  if (category === 'review') return '\uC790\uB8CC\uC2E4';
+  return freeNumberMap.value.get(board.id) || '-';
+};
 
 const handleSelect = (id) => {
   if (!authStore.isAuthenticated) {
@@ -291,6 +330,16 @@ watch(
   padding: 10px 12px;
   min-width: 200px;
   outline: none;
+}
+
+.sort-select {
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  padding: 10px 12px;
+  min-width: 120px;
+  outline: none;
+  background: #fff;
+  color: #374151;
 }
 
 .write-btn {

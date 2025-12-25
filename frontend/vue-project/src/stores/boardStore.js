@@ -6,6 +6,7 @@ import {
   createBoard,
   createComment,
   deleteComment,
+  toggleBoardLike,
   updateBoard,
   deleteBoard,
 } from '../api/client';
@@ -128,6 +129,36 @@ export const useBoardStore = defineStore('board', () => {
   // alias to avoid stale HMR instances missing the action
   const deleteBoardAction = removeBoard;
 
+  const toggleLike = async (boardId) => {
+    loading.value = true;
+    error.value = null;
+    try {
+      const data = await toggleBoardLike(boardId);
+      if (current.value?.id === boardId) {
+        current.value = {
+          ...current.value,
+          is_liked: data?.liked ?? current.value?.is_liked,
+          like_count: data?.like_count ?? current.value?.like_count,
+        };
+      }
+      boards.value = boards.value.map((b) =>
+        b.id === boardId
+          ? {
+              ...b,
+              is_liked: data?.liked ?? b.is_liked,
+              like_count: data?.like_count ?? b.like_count,
+            }
+          : b
+      );
+      return data;
+    } catch (err) {
+      error.value = err.message || '좋아요 처리에 실패했습니다.';
+      throw err;
+    } finally {
+      loading.value = false;
+    }
+  };
+
   return {
     boards,
     current,
@@ -141,5 +172,6 @@ export const useBoardStore = defineStore('board', () => {
     deleteBoardAction,
     addComment,
     removeComment,
+    toggleLike,
   };
 });
