@@ -157,3 +157,9 @@ export async function deleteComment(commentId) {
     method: 'DELETE',
   });
 }
+
+export async function toggleBoardLike(boardId) {
+  return request(`/boards/${boardId}/like/`, {
+    method: 'POST',
+  });
+}

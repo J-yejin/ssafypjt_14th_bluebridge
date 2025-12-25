@@ -15,6 +15,8 @@ class CommentSerializer(serializers.ModelSerializer):
 
 class BoardSerializer(serializers.ModelSerializer):
     user = serializers.CharField(source="user.username", read_only=True)
+    like_count = serializers.IntegerField(read_only=True)
+    is_liked = serializers.SerializerMethodField()
     policy = serializers.PrimaryKeyRelatedField(
         queryset=Policy.objects.all(),
         allow_null=True,
@@ -31,10 +33,18 @@ class BoardSerializer(serializers.ModelSerializer):
             "category",
             "policy",
             "views",
+            "like_count",
+            "is_liked",
             "created_at",
             "updated_at",
         ]
         read_only_fields = ["id", "user", "views", "created_at", "updated_at"]
+
+    def get_is_liked(self, obj):
+        request = self.context.get("request")
+        if not request or not request.user or not request.user.is_authenticated:
+            return False
+        return obj.likes.filter(user=request.user).exists()
 
 
 class BoardDetailSerializer(BoardSerializer):

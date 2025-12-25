@@ -74,10 +74,29 @@
               </button>
               <button
                 type="button"
+                v-if="!isAuthor"
+                class="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg border border-gray-200 text-gray-600 hover:bg-gray-50 transition"
+                :class="boardStore.current?.is_liked ? 'border-rose-200 bg-rose-50 text-rose-500' : ''"
+                @click="handleToggleLike"
+              >
+                <svg viewBox="0 0 24 24" aria-hidden="true" class="h-5 w-5">
+                  <path
+                    :fill="boardStore.current?.is_liked ? 'currentColor' : 'none'"
+                    stroke="currentColor"
+                    stroke-width="1.8"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    d="M20.8 7.5c0 4.7-8.8 9.8-8.8 9.8S3.2 12.2 3.2 7.5c0-2.2 1.8-4 4-4 1.6 0 3 0.9 3.8 2.1 0.8-1.2 2.2-2.1 3.8-2.1 2.2 0 4 1.8 4 4z"
+                  />
+                </svg>
+                <span>{{ boardStore.current?.like_count || 0 }}</span>
+              </button>
+              <button
+                type="button"
                 @click="handleAddComment"
                 class="px-5 py-2.5 rounded-lg bg-gradient-to-r from-blue-500 to-cyan-500 text-white shadow-md hover:shadow-lg transition"
               >
-                댓글 등록
+                &#45843;&#44544; &#46321;&#47197;
               </button>
             </div>
           </div>
@@ -151,6 +170,19 @@ const handleAddComment = async () => {
     newComment.value = '';
   } catch (err) {
     alert(err?.message || '댓글 등록에 실패했습니다.');
+  }
+};
+
+const handleToggleLike = async () => {
+  if (!authStore.isAuthenticated) {
+    alert('\uB85C\uADF8\uC778 \uD6C4 \uAC8C\uC2DC\uAE00\uC744 \uD655\uC778\uD560 \uC218 \uC788\uC2B5\uB2C8\uB2E4.');
+    router.push('/login');
+    return;
+  }
+  try {
+    await boardStore.toggleLike(boardStore.current.id);
+  } catch (err) {
+    alert(err?.message || '\uC88B\uC544\uC694 \uCC98\uB9AC\uC5D0 \uC2E4\uD328\uD588\uC2B5\uB2C8\uB2E4.');
   }
 };
 
