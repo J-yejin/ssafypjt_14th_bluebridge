@@ -2,7 +2,7 @@
   <div class="min-h-screen">
     <div class="max-w-[1400px] mx-auto px-8 lg:px-12 py-12">
       <div class="mb-12">
-        <h1 class="text-blue-900 mb-3 text-4xl">정책 검색</h1>
+        <h1 class="text-blue-900 mb-3 text-4xl">정책 찾기</h1>
         <p class="text-gray-600 text-lg">원하는 조건으로 청년 정책을 탐색하세요.</p>
       </div>
 
