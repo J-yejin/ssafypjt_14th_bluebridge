@@ -6,7 +6,7 @@
           <img
             src="/logo.png"
             alt="Blue Bridge 로고"
-            class="w-24 h-20 shadow-lg group-hover:shadow-xl transition-all object-contain"
+            class="w-24 h-20 transition-all object-contain"
           />
           <div class="flex flex-col leading-tight">
             <span class="text-lg text-gray-600 font-medium">청년 정책 허브</span>
