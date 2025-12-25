@@ -17,7 +17,7 @@
 
 **기술 스택**
 
-* Backend: Django, Django REST Framework, SQLite / PostgreSQL
+* Backend: Django, Django REST Framework, SQLite
 * Frontend: Vue 3, Pinia, Vite
 * (선택) 벡터 검색: Chroma / pgvector
 
@@ -69,17 +69,18 @@ frontend/vue-project/
 
 * 필수 타겟 정책(장애/보훈/저소득/한부모/군인) 불일치 시 제외
 * 정책에 성별 키워드가 있을 경우에만 성별 매칭
+* 사용자 쿼리를 임베딩 유사도 기반으로 분석한 뒤 관련 정책을 추천
+![추천 기능2](screenshots/recommend1.PNG)
 * 프로필 기반 스코어링 후 상위 정책 추천
-![추천 기능](screenshots/recommend.PNG)
-![추천 기능2](screenshots/recommend2.PNG)
+![추천 기능](screenshots/recommend2.PNG)
+
 
 ### 4.2 위시리스트 및 달력
 
 * 정책 저장/삭제
+![정책 상세](screenshots/policy_detail.PNG)
 * 시작일·마감일 기반 달력 이벤트 생성
 * 상시 모집 정책과 기간 모집 정책 분리 표시
-
-![정책 상세](screenshots/policy_detail.PNG)
 ![달력](screenshots/calendeer.PNG)
 
 ### 4.3 게시판
@@ -186,7 +187,7 @@ frontend/vue-project/
 ---
 
 ## 6. ERD
-![ERD](screenshots/ERD.PNG)
+![ERD](screenshots/ERD.png)
 
 ---
 
