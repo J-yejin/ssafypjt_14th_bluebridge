@@ -39,7 +39,7 @@
               class="search-input"
               placeholder="검색어를 입력하세요"
             />
-            <router-link v-if="authStore.isAuthenticated" to="/boards/new" class="write-btn">
+            <router-link v-if="canWrite" to="/boards/new" class="write-btn">
               글 작성
             </router-link>
           </div>
@@ -102,6 +102,12 @@ const categories = [
   { label: '자료실', value: 'review' },
   { label: '자유게시판', value: 'free' },
 ];
+
+const canWrite = computed(() => {
+  if (!authStore.isAuthenticated) return false;
+  if (selectedCategory.value === 'notice') return authStore.isStaff;
+  return true;
+});
 
 const formatDate = (value) => {
   if (!value) return '';
