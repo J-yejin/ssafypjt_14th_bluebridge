@@ -129,6 +129,7 @@
               v-for="policy in ragBasedRecommendations"
               :key="policy.id"
               :to="`/policy/${policy.id}`"
+              @click="persistRecommendations"
               class="bg-gradient-to-br from-cyan-50 to-blue-50 rounded-2xl shadow-lg hover:shadow-2xl transition-all p-8 border-2 border-cyan-200 hover:border-cyan-300 group relative overflow-hidden"
             >
               <div class="absolute top-0 right-0 w-32 h-32 bg-cyan-200/30 rounded-full -mr-16 -mt-16" />
@@ -144,6 +145,21 @@
                     </span>
                     <span class="text-gray-500">{{ policy.organization }}</span>
                   </div>
+                  <button
+                    type="button"
+                    class="inline-flex items-center justify-center w-10 h-10 rounded-full border border-cyan-200 text-cyan-700 hover:text-rose-500 hover:border-rose-200 transition bg-white/70"
+                    :class="policyStore.isWishlisted(policy.id) ? 'text-rose-500 border-rose-200 bg-rose-50' : ''"
+                    @click.stop.prevent="handleToggleWishlist(policy.id)"
+                    aria-label="&#44288;&#49900;&#32;&#51221;&#52293;"
+                    title="&#44288;&#49900;&#32;&#51221;&#52293;"
+                  >
+                    <Heart
+                      class="w-5 h-5"
+                      :class="policyStore.isWishlisted(policy.id) ? 'text-rose-500' : ''"
+                      :fill="policyStore.isWishlisted(policy.id) ? '#ef4444' : 'none'"
+                      :stroke="policyStore.isWishlisted(policy.id) ? '#ef4444' : 'currentColor'"
+                    />
+                  </button>
                 </div>
                 <div class="flex items-center justify-between gap-3 mb-3">
                   <h3 class="text-blue-900 text-2xl group-hover:text-blue-700 transition-colors">{{ policy.title }}</h3>
@@ -204,6 +220,7 @@
             v-for="policy in profileBasedRecommendations"
             :key="policy.id"
             :to="`/policy/${policy.id}`"
+            @click="persistRecommendations"
             class="bg-white rounded-2xl shadow-md hover:shadow-xl transition-all p-8 border-2 border-transparent hover:border-blue-200 group"
           >
             <div class="flex items-start justify-between mb-4">
@@ -213,7 +230,24 @@
                 </span>
                 <span class="text-gray-500">{{ policy.organization }}</span>
               </div>
-              <span class="text-gray-500 bg-gray-50 px-3 py-1 rounded-full text-sm">{{ policy.region }}</span>
+              <div class="flex items-center gap-2">
+                <span class="text-gray-500 bg-gray-50 px-3 py-1 rounded-full text-sm">{{ policy.region }}</span>
+                <button
+                  type="button"
+                  class="inline-flex items-center justify-center w-10 h-10 rounded-full border border-gray-200 text-gray-500 hover:text-rose-500 hover:border-rose-200 transition bg-white"
+                  :class="policyStore.isWishlisted(policy.id) ? 'text-rose-500 border-rose-200 bg-rose-50' : ''"
+                  @click.stop.prevent="handleToggleWishlist(policy.id)"
+                  aria-label="&#44288;&#49900;&#32;&#51221;&#52293;"
+                  title="&#44288;&#49900;&#32;&#51221;&#52293;"
+                >
+                  <Heart
+                    class="w-5 h-5"
+                    :class="policyStore.isWishlisted(policy.id) ? 'text-rose-500' : ''"
+                    :fill="policyStore.isWishlisted(policy.id) ? '#ef4444' : 'none'"
+                    :stroke="policyStore.isWishlisted(policy.id) ? '#ef4444' : 'currentColor'"
+                  />
+                </button>
+              </div>
             </div>
             <div class="flex items-center justify-between gap-3 mb-3">
               <h3 class="text-blue-900 text-2xl group-hover:text-blue-700 transition-colors">{{ policy.title }}</h3>
@@ -263,8 +297,8 @@
 
 <script setup>
 import { ref, computed, onMounted, watch } from 'vue';
-import { useRouter } from 'vue-router';
-import { Sparkles, AlertCircle, Search, ArrowRight } from 'lucide-vue-next';
+import { useRouter, onBeforeRouteLeave } from 'vue-router';
+import { Sparkles, AlertCircle, Search, ArrowRight, Heart } from 'lucide-vue-next';
 import { useUserStore } from '../stores/userStore';
 import { usePolicyStore } from '../stores/policyStore';
 import { useAuthStore } from '../stores/authStore';
@@ -284,6 +318,10 @@ const ragMeta = ref({});
 const recommendedFromApi = ref([]);
 const profileLoading = ref(false);
 const profileMeta = ref({});
+const hasRestored = ref(false);
+const RAG_STORAGE_KEY = 'bb_rag_recommendations';
+const PROFILE_STORAGE_KEY = 'bb_profile_recommendations';
+const PROFILE_REFRESH_KEY = 'bb_profile_refresh';
 const ragReasonMap = computed(() => {
   const map = {};
   ragBasedRecommendations.value.forEach((item) => {
@@ -319,17 +357,86 @@ const loadRecommendations = async () => {
   }
 };
 
+const persistRecommendations = () => {
+  const ragPayload = {
+    query: ragQuery.value,
+    results: ragBasedRecommendations.value,
+    meta: ragMeta.value,
+    show: showRagResults.value,
+  };
+  const profilePayload = {
+    results: recommendedFromApi.value,
+    meta: profileMeta.value,
+  };
+  try {
+    sessionStorage.setItem(RAG_STORAGE_KEY, JSON.stringify(ragPayload));
+    sessionStorage.setItem(PROFILE_STORAGE_KEY, JSON.stringify(profilePayload));
+  } catch (_) {
+    // ignore storage errors
+  }
+};
+
+const restoreRecommendations = () => {
+  try {
+    const ragRaw = sessionStorage.getItem(RAG_STORAGE_KEY);
+    const profileRaw = sessionStorage.getItem(PROFILE_STORAGE_KEY);
+    let restored = false;
+    if (ragRaw) {
+      const data = JSON.parse(ragRaw);
+      if (Array.isArray(data?.results)) {
+        ragBasedRecommendations.value = data.results;
+        ragMeta.value = data.meta || {};
+        ragQuery.value = data.query || '';
+        showRagResults.value = Boolean(data.show);
+        restored = true;
+      }
+    }
+    if (profileRaw) {
+      const data = JSON.parse(profileRaw);
+      if (Array.isArray(data?.results)) {
+        recommendedFromApi.value = data.results;
+        profileMeta.value = data.meta || {};
+        restored = true;
+      }
+    }
+    return restored;
+  } catch (_) {
+    return false;
+  }
+};
+
+const initRestore = () => {
+  let restored = false;
+  try {
+    if (sessionStorage.getItem(PROFILE_REFRESH_KEY)) {
+      sessionStorage.removeItem(PROFILE_REFRESH_KEY);
+      sessionStorage.removeItem(PROFILE_STORAGE_KEY);
+    } else {
+      restored = restoreRecommendations();
+    }
+  } catch (_) {
+    restored = restoreRecommendations();
+  }
+  hasRestored.value = restored;
+};
+
+initRestore();
+
 onMounted(async () => {
   if (!authStore.isAuthenticated) return;
   await userStore.loadProfile();
-  policyStore.loadPolicies();
-  loadRecommendations();
+  if (!hasRestored.value) {
+    policyStore.loadPolicies();
+    loadRecommendations();
+  }
 });
 
 watch(
   () => ({ ...userStore.profile }),
   () => {
-    loadRecommendations();
+    if (!hasRestored.value) {
+      loadRecommendations();
+    }
   },
   { deep: true }
 );
@@ -398,4 +505,36 @@ const formatScore = (score) => {
 
 const goLogin = () => router.push('/login');
 const goOnboarding = () => router.push('/onboarding');
+
+const handleToggleWishlist = async (policyId) => {
+  if (!authStore.isAuthenticated) {
+    alert('로그인 후 이용해주세요.');
+    return;
+  }
+  try {
+    await policyStore.toggleWishlist(policyId);
+  } catch (err) {
+    const message = err?.message || '';
+    if (message.toLowerCase().includes('credentials')) {
+      alert('로그인 후 이용해주세요.');
+      return;
+    }
+    alert(message || '관심정책 처리에 실패했습니다.');
+  }
+};
+
+onBeforeRouteLeave((to) => {
+  if (to.path && to.path.startsWith('/policy/')) {
+    return;
+  }
+  try {
+    sessionStorage.removeItem(RAG_STORAGE_KEY);
+  } catch (_) {
+    // ignore storage errors
+  }
+  ragQuery.value = '';
+  showRagResults.value = false;
+  ragBasedRecommendations.value = [];
+  ragMeta.value = {};
+});
 </script>

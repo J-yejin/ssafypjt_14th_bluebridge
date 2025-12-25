@@ -184,7 +184,7 @@ const transformPolicy = (p) => {
   const cleanedTitle = cleanText(p.title || '');
 
   return {
-    id: p.id ?? p.source_id ?? p.sourceId ?? String(Math.random()),
+    id: p.id ?? p.policy_id ?? p.policyId ?? p.source_id ?? p.sourceId ?? String(Math.random()),
     title: cleanedTitle,
     category,
     categories: mappedCategories,

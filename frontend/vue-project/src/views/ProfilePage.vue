@@ -553,6 +553,11 @@ const handleRecommend = async () => {
   }
   await userStore.loadProfile();
   formData.value = cloneProfile(userStore.profile);
+  try {
+    sessionStorage.setItem('bb_profile_refresh', '1');
+  } catch (_) {
+    // ignore storage errors
+  }
   router.push('/recommend');
 };
 </script>
