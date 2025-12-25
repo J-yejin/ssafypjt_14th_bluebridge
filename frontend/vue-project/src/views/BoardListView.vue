@@ -139,11 +139,23 @@ const filteredBoards = computed(() => {
     );
   }
   const compareByDate = (a, b) => new Date(b.created_at) - new Date(a.created_at);
-  if (sortKey.value === "likes") {
-    const likeCount = (item) => item?.likes ?? item?.like_count ?? 0;
-    list = [...list].sort((a, b) => likeCount(b) - likeCount(a) || compareByDate(a, b));
+  const likeCount = (item) => item?.likes ?? item?.like_count ?? 0;
+  const compareBySortKey =
+    sortKey.value === "likes"
+      ? (a, b) => likeCount(b) - likeCount(a) || compareByDate(a, b)
+      : compareByDate;
+  const categoryPriority = (item) => {
+    const category = (item.category || '').toLowerCase();
+    if (category === 'notice') return 0;
+    if (category === 'review') return 1;
+    return 2;
+  };
+  if (selectedCategory.value === 'all') {
+    list = [...list].sort(
+      (a, b) => categoryPriority(a) - categoryPriority(b) || compareBySortKey(a, b)
+    );
   } else {
-    list = [...list].sort(compareByDate);
+    list = [...list].sort(compareBySortKey);
   }
   return list;
 });
