@@ -101,6 +101,8 @@ def board_detail(request, pk):
 @permission_classes([IsAuthenticated])
 def create_comment(request, pk):
     board = get_object_or_404(Board, pk=pk)
+    if board.category == "notice":
+        return Response({"detail": "Comments disabled"}, status=403)
     serializer = CommentSerializer(data=request.data)
     serializer.is_valid(raise_exception=True)
     serializer.save(user=request.user, board=board)
