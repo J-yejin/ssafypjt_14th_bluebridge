@@ -147,7 +147,7 @@
                   </div>
                   <button
                     type="button"
-                    class="inline-flex items-center justify-center w-10 h-10 rounded-full border border-cyan-200 text-cyan-700 hover:text-rose-500 hover:border-rose-200 transition bg-white/70"
+                    class="inline-flex items-center justify-center w-10 h-10 rounded-full border border-cyan-200 text-cyan-700 hover:text-rose-500 hover:border-rose-200 transition bg-white cursor-pointer/70 cursor-pointer"
                     :class="policyStore.isWishlisted(policy.id) ? 'text-rose-500 border-rose-200 bg-rose-50' : ''"
                     @click.stop.prevent="handleToggleWishlist(policy.id)"
                     aria-label="&#44288;&#49900;&#32;&#51221;&#52293;"
@@ -172,7 +172,7 @@
                   </span>
                 </div>
 
-                <div class="flex flex-wrap gap-2">
+                <div class="flex flex-wrap gap-2 mb-4">
                   <span v-for="tag in policy.tags" :key="tag" class="px-3 py-1 bg-white/60 text-gray-600 rounded-lg text-sm">
                     #{{ tag }}
                   </span>
@@ -234,7 +234,7 @@
                 <span class="text-gray-500 bg-gray-50 px-3 py-1 rounded-full text-sm">{{ policy.region }}</span>
                 <button
                   type="button"
-                  class="inline-flex items-center justify-center w-10 h-10 rounded-full border border-gray-200 text-gray-500 hover:text-rose-500 hover:border-rose-200 transition bg-white"
+                  class="inline-flex items-center justify-center w-10 h-10 rounded-full border border-gray-200 text-gray-500 hover:text-rose-500 hover:border-rose-200 transition bg-white cursor-pointer"
                   :class="policyStore.isWishlisted(policy.id) ? 'text-rose-500 border-rose-200 bg-rose-50' : ''"
                   @click.stop.prevent="handleToggleWishlist(policy.id)"
                   aria-label="&#44288;&#49900;&#32;&#51221;&#52293;"
@@ -260,7 +260,7 @@
               </span>
             </div>
 
-            <div class="flex flex-wrap gap-2">
+            <div class="flex flex-wrap gap-2 mb-4">
               <span v-for="tag in policy.tags" :key="tag" class="px-3 py-1 bg-gray-100 text-gray-600 rounded-lg text-sm">
                 #{{ tag }}
               </span>
@@ -425,6 +425,7 @@ initRestore();
 onMounted(async () => {
   if (!authStore.isAuthenticated) return;
   await userStore.loadProfile();
+  await policyStore.loadWishlist();
   if (!hasRestored.value) {
     policyStore.loadPolicies();
     loadRecommendations();
@@ -517,6 +518,10 @@ const handleToggleWishlist = async (policyId) => {
     const message = err?.message || '';
     if (message.toLowerCase().includes('credentials')) {
       alert('로그인 후 이용해주세요.');
+      return;
+    }
+    if (message.toLowerCase().includes('already wishlisted')) {
+      await policyStore.loadWishlist();
       return;
     }
     alert(message || '관심정책 처리에 실패했습니다.');
