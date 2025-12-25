@@ -10,6 +10,7 @@ from boards.serializers import (
     BoardSerializer,
     BoardDetailSerializer,
     CommentSerializer,
+    CommentListSerializer,
 )
 
 
@@ -117,6 +118,14 @@ def delete_comment(request, comment_id):
         return Response({"detail": "Permission denied"}, status=403)
     comment.delete()
     return Response(status=204)
+
+
+@api_view(["GET"])
+@permission_classes([IsAuthenticated])
+def my_comments(request):
+    comments = Comment.objects.filter(user=request.user).select_related("board").order_by("-created_at")
+    serializer = CommentListSerializer(comments, many=True)
+    return Response(serializer.data)
 
 
 @api_view(["POST"])

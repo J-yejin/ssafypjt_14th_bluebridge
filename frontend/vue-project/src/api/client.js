@@ -161,6 +161,10 @@ export async function deleteComment(commentId) {
   });
 }
 
+export async function fetchMyComments() {
+  return request('/boards/comments/me/');
+}
+
 export async function toggleBoardLike(boardId) {
   return request(`/boards/${boardId}/like/`, {
     method: 'POST',

@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <div class="min-h-screen">
     <div v-if="!isLoggedIn" class="min-h-screen flex items-center justify-center">
       <div class="max-w-2xl mx-auto px-8 lg:px-12">
@@ -291,60 +291,90 @@
         </div>
       </form>
 
-      <!-- 게시글 관리 -->
-      <div class="bg-white rounded-2xl shadow-lg p-10 border border-blue-100 space-y-4 mt-8">
-        <div class="flex items-center justify-between">
-          <div>
-            <h2 class="text-2xl font-semibold text-blue-900">게시글 관리</h2>
-            <p class="text-gray-600 mt-1">내가 작성한 게시글을 확인하고 관리할 수 있습니다.</p>
+      <!-- board/comment management -->
+      <div class="grid md:grid-cols-2 gap-6 mt-8">
+        <div class="bg-white rounded-2xl shadow-lg p-10 border border-blue-100 space-y-4">
+          <div class="flex items-center justify-between">
+            <div>
+              <h2 class="text-2xl font-semibold text-blue-900">&#44172;&#49884;&#44544; &#44288;&#47532;</h2>
+              <p class="text-gray-600 mt-1">&#45236;&#44032; &#51089;&#49457;&#54620; &#44172;&#49884;&#44544;&#51012; &#54869;&#51064;&#54616;&#44256; &#44288;&#47532;&#54624; &#49688; &#51080;&#49845;&#45768;&#45796;.</p>
+            </div>
+            <router-link
+              v-if="authStore.isAuthenticated"
+              to="/boards/new"
+              class="px-4 py-2 rounded-xl bg-gradient-to-r from-blue-500 to-cyan-500 text-white shadow hover:shadow-lg transition"
+            >
+              &#44544; &#51089;&#49457;
+            </router-link>
           </div>
-          <router-link
-            v-if="authStore.isAuthenticated"
-            to="/boards/new"
-            class="px-4 py-2 rounded-xl bg-gradient-to-r from-blue-500 to-cyan-500 text-white shadow hover:shadow-lg transition"
-          >
-            글 작성
-          </router-link>
+
+          <div v-if="myBoards.length === 0" class="text-gray-500 bg-gray-50 border border-gray-100 rounded-xl p-6">
+            &#51089;&#49457;&#54620; &#44172;&#49884;&#44544;&#51060; &#50630;&#49845;&#45768;&#45796;.
+          </div>
+          <ul v-else class="space-y-3">
+            <li
+              v-for="board in myBoards"
+              :key="board.id"
+              class="flex flex-col md:flex-row md:items-center md:justify-between gap-2 border border-gray-100 rounded-xl p-4 hover:bg-gray-50 transition"
+            >
+              <div class="space-y-1">
+                <div class="flex items-center gap-2">
+                  <router-link :to="`/boards/${board.id}`" class="text-lg font-semibold text-blue-900 hover:underline">
+                    {{ board.title }}
+                  </router-link>
+                  <span class="px-3 py-1 text-sm rounded-full bg-green-50 text-green-700 border border-green-200">
+                    {{ displayCategory(board.category) }}
+                  </span>
+                </div>
+                <p class="text-gray-500 text-sm">&#51089;&#49457;&#51068; {{ formatDate(board.created_at) }}</p>
+              </div>
+              <div class="flex gap-2">
+                <router-link
+                  :to="`/boards/${board.id}`"
+                  class="px-3 py-2 rounded-lg border border-gray-200 text-gray-700 hover:bg-gray-100 transition"
+                >
+                  &#49345;&#49464;&#48372;&#44592;
+                </router-link>
+                <button
+                  type="button"
+                  class="px-3 py-2 rounded-lg border border-red-200 text-red-600 hover:bg-red-50 transition"
+                  @click="handleDeleteBoard(board.id)"
+                >
+                  &#49325;&#51228;
+                </button>
+              </div>
+            </li>
+          </ul>
         </div>
 
-        <div v-if="myBoards.length === 0" class="text-gray-500 bg-gray-50 border border-gray-100 rounded-xl p-6">
-          작성한 게시글이 없습니다.
-        </div>
-        <ul v-else class="space-y-3">
-          <li
-            v-for="board in myBoards"
-            :key="board.id"
-            class="flex flex-col md:flex-row md:items-center md:justify-between gap-2 border border-gray-100 rounded-xl p-4 hover:bg-gray-50 transition"
-          >
-            <div class="space-y-1">
-              <div class="flex items-center gap-2">
-                <router-link :to="`/boards/${board.id}`" class="text-lg font-semibold text-blue-900 hover:underline">
-                  {{ board.title }}
-                </router-link>
-                <span class="px-3 py-1 text-sm rounded-full bg-green-50 text-green-700 border border-green-200">
-                  {{ displayCategory(board.category) }}
-                </span>
-              </div>
-              <p class="text-gray-500 text-sm">작성일 {{ formatDate(board.created_at) }}</p>
-            </div>
-            <div class="flex gap-2">
+        <div class="bg-white rounded-2xl shadow-lg p-10 border border-blue-100 space-y-4">
+          <div>
+            <h2 class="text-2xl font-semibold text-blue-900">&#45843;&#44544; &#44288;&#47532;</h2>
+            <p class="text-gray-600 mt-1">&#45236;&#44032; &#51089;&#49457;&#54620; &#45843;&#44544;&#51012; &#44172;&#49884;&#44544;&#44284; &#54632;&#44760; &#54869;&#51064;&#54616;&#49464;&#50836;.</p>
+          </div>
+
+          <div v-if="myComments.length === 0" class="text-gray-500 bg-gray-50 border border-gray-100 rounded-xl p-6">
+            &#51089;&#49457;&#54620; &#45843;&#44544;&#51060; &#50630;&#49845;&#45768;&#45796;.
+          </div>
+          <ul v-else class="space-y-3">
+            <li v-for="comment in myComments" :key="comment.id">
               <router-link
-                :to="`/boards/${board.id}`"
-                class="px-3 py-2 rounded-lg border border-gray-200 text-gray-700 hover:bg-gray-100 transition"
+                :to="`/boards/${comment.board_id}`"
+                class="flex flex-col gap-2 border border-gray-100 rounded-xl p-4 hover:bg-gray-50 transition cursor-pointer"
               >
-                상세보기
+                <div class="space-y-1">
+                  <span class="text-lg font-semibold text-blue-900 hover:underline">
+                    {{ comment.board_title }}
+                  </span>
+                  <p class="text-gray-700 text-sm">&#45843;&#44544;: {{ comment.content }}</p>
+                  <p class="text-gray-500 text-sm">&#51089;&#49457;&#51068; {{ formatDate(comment.created_at) }}</p>
+                </div>
               </router-link>
-              <button
-                type="button"
-                class="px-3 py-2 rounded-lg border border-red-200 text-red-600 hover:bg-red-50 transition"
-                @click="handleDeleteBoard(board.id)"
-              >
-                삭제
-              </button>
-            </div>
-          </li>
-        </ul>
+            </li>
+          </ul>
+        </div>
       </div>
+
     </div>
   </div>
 </template>
@@ -414,6 +444,7 @@ onMounted(async () => {
   await userStore.loadProfile();
   formData.value = cloneProfile(userStore.profile);
   await boardStore.loadBoards();
+  await boardStore.loadMyComments();
 });
 
 watch(
@@ -440,6 +471,8 @@ const myBoards = computed(() => {
   if (!me) return [];
   return (boardStore.boards || []).filter((b) => b.user === me);
 });
+
+const myComments = computed(() => boardStore.myComments || []);
 
 const handleDeleteBoard = async (id) => {
   if (!window.confirm('해당 게시글을 삭제하시겠습니까?')) return;
@@ -567,3 +600,4 @@ const handleRecommend = async () => {
   }
 }
 </style>
+
