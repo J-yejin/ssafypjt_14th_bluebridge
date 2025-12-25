@@ -54,7 +54,7 @@
               isActive('/boards') ? 'bg-blue-50 text-blue-700' : 'text-gray-600 hover:bg-blue-50/50 hover:text-blue-600'
             ]"
           >
-            <Search :size="18" />
+            <FileText :size="18" />
             <span>&#44172;&#49884;&#44544;</span>
           </router-link>
 
@@ -101,7 +101,7 @@
 <script setup>
 import { useRoute, useRouter } from 'vue-router';
 import { computed } from 'vue';
-import { Search, Sparkles, User, Home } from 'lucide-vue-next';
+import { Search, Sparkles, User, Home, FileText } from 'lucide-vue-next';
 import { useAuthStore } from '../stores/authStore';
 import { useUserStore } from '../stores/userStore';
 
