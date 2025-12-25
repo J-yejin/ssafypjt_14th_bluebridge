@@ -141,6 +141,7 @@ class PolicyBasicSerializer(serializers.ModelSerializer):
             "provider",
             "region_sido",
             "region_sigungu",
+            "start_date",
             "region_scope",
             "applicable_regions",
             "min_age",
