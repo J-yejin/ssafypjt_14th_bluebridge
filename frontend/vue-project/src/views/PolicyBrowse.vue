@@ -106,7 +106,19 @@
               </span>
               <span class="text-gray-500">{{ policy.organization }}</span>
             </div>
-            <span class="text-gray-500 bg-gray-50 px-3 py-1 rounded-full text-sm">{{ policy.region }}</span>
+            <div class="flex items-center gap-3">
+              <span class="text-gray-500 bg-gray-50 px-3 py-1 rounded-full text-sm">{{ policy.region }}</span>
+              <button
+                type="button"
+                class="inline-flex items-center justify-center w-10 h-10 rounded-full border border-gray-200 text-gray-500 hover:text-rose-500 hover:border-rose-200 transition"
+                :class="policyStore.isWishlisted(policy.id) ? 'text-rose-500 border-rose-200 bg-rose-50' : ''"
+                @click.stop.prevent="handleToggleWishlist(policy.id)"
+                aria-label="&#44288;&#49900;&#32;&#51221;&#52293;"
+                title="&#44288;&#49900;&#32;&#51221;&#52293;"
+              >
+                <Heart class="w-5 h-5" :fill="policyStore.isWishlisted(policy.id) ? 'currentColor' : 'none'" />
+              </button>
+            </div>
           </div>
           <h3 class="text-blue-900 mb-3 text-2xl group-hover:text-blue-700 transition-colors">{{ policy.title }}</h3>
 
@@ -159,7 +171,7 @@
 </template>
 
 <script setup>
-import { Search, Filter, X } from 'lucide-vue-next';
+import { Search, Filter, X, Heart } from 'lucide-vue-next';
 import { ref, computed, onMounted, watch } from 'vue';
 import { usePolicyStore } from '../stores/policyStore';
 import { useAuthStore } from '../stores/authStore';
@@ -229,6 +241,19 @@ onMounted(() => {
 });
 
 const filteredPolicies = computed(() => policyStore.policies || []);
+
+const handleToggleWishlist = async (policyId) => {
+  if (!authStore.isAuthenticated) {
+    alert('로그인이 필요합니다.');
+    router.push('/login');
+    return;
+  }
+  try {
+    await policyStore.toggleWishlist(policyId);
+  } catch (err) {
+    alert(err?.message || '관심 정책 처리에 실패했습니다.');
+  }
+};
 
 const resetFilters = () => {
   searchTerm.value = '';
