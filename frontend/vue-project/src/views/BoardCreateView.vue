@@ -7,9 +7,8 @@
         <div>
           <label class="block text-sm font-medium text-gray-700 mb-2">카테고리</label>
           <select v-model="form.category" class="w-full border rounded-lg px-4 py-3 focus:ring-2 focus:ring-blue-500">
-            <option value="notice">공지사항</option>
-            <option value="review">자료실</option>
-            <option value="free">자유게시판</option>
+            <option value="review">&#51088;&#47308;&#49892;</option>
+            <option value="free">&#51088;&#50976;&#44172;&#49884;&#54032;</option>
           </select>
         </div>
 
@@ -66,7 +65,7 @@ const authStore = useAuthStore();
 const router = useRouter();
 
 const form = reactive({
-  category: 'notice',
+  category: 'review',
   title: '',
   content: '',
 });

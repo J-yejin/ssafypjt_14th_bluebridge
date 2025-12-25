@@ -27,16 +27,16 @@
           <li
             v-for="comment in sortedComments"
             :key="comment.id"
-            class="border border-gray-100 rounded-xl p-4 bg-gray-50"
+            class="border border-gray-100 rounded-xl p-4 pr-10 bg-gray-50"
           >
-            <div class="flex justify-between items-center text-sm text-gray-500 mb-2">
+            <div class="flex justify-between items-center text-sm text-gray-500 mb-2 pr-6">
               <span>{{ comment.user }}</span>
-              <div class="flex items-center gap-3">
+              <div class="flex items-center gap-3 pr-4">
                 <span>{{ formatDate(comment.created_at) }}</span>
                 <button
                   v-if="comment.user === authStore.username"
                   type="button"
-                  class="text-red-500 hover:underline cursor-pointer"
+                  class="text-red-500 hover:underline cursor-pointer mr-2"
                   @click="handleDeleteComment(comment.id)"
                 >
                   삭제
