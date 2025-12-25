@@ -36,7 +36,7 @@
                 <button
                   v-if="comment.user === authStore.username"
                   type="button"
-                  class="text-red-500 hover:underline"
+                  class="text-red-500 hover:underline cursor-pointer"
                   @click="handleDeleteComment(comment.id)"
                 >
                   삭제
@@ -59,7 +59,7 @@
               <button
                 v-if="isAuthor"
                 type="button"
-                class="px-5 py-2.5 rounded-lg border border-gray-200 text-gray-700 hover:bg-gray-50 transition"
+                class="px-5 py-2.5 rounded-lg border border-gray-200 text-gray-700 hover:bg-gray-50 transition cursor-pointer"
                 @click="handleEditPost"
               >
                 게시글 수정
@@ -67,7 +67,7 @@
               <button
                 v-if="isAuthor"
                 type="button"
-                class="px-5 py-2.5 rounded-lg border border-red-200 text-red-600 hover:bg-red-50 transition"
+                class="px-5 py-2.5 rounded-lg border border-red-200 text-red-600 hover:bg-red-50 transition cursor-pointer"
                 @click="handleDeletePost"
               >
                 게시글 삭제
@@ -75,7 +75,7 @@
               <button
                 type="button"
                 v-if="!isAuthor"
-                class="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg border border-gray-200 text-gray-600 hover:bg-gray-50 transition"
+                class="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg border border-gray-200 text-gray-600 hover:bg-gray-50 transition cursor-pointer"
                 :class="boardStore.current?.is_liked ? 'border-rose-200 bg-rose-50 text-rose-500' : ''"
                 @click="handleToggleLike"
               >
@@ -94,7 +94,7 @@
               <button
                 type="button"
                 @click="handleAddComment"
-                class="px-5 py-2.5 rounded-lg bg-gradient-to-r from-blue-500 to-cyan-500 text-white shadow-md hover:shadow-lg transition"
+                class="px-5 py-2.5 rounded-lg bg-gradient-to-r from-blue-500 to-cyan-500 text-white shadow-md hover:shadow-lg transition cursor-pointer"
               >
                 &#45843;&#44544; &#46321;&#47197;
               </button>
