@@ -105,7 +105,7 @@
                 class="px-5 py-2.5 rounded-lg border border-blue-200 text-blue-700 hover:bg-blue-50 transition cursor-pointer"
                 @click="handleGoBack"
               >
-                목록으로 돌아가기
+                &#47785;&#47197;&#51004;&#47196; &#46028;&#50500;&#44032;&#44592;
               </button>
             </div>
           </div>
