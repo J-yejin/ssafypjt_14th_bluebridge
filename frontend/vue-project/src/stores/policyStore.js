@@ -412,6 +412,7 @@ export const usePolicyStore = defineStore('policy', () => {
     hasLoaded,
     browseState,
     pagination,
+    wishlistIds,
     setPolicies,
     getById,
     loadPolicies,

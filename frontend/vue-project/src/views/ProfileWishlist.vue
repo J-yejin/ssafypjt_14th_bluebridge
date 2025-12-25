@@ -59,15 +59,17 @@
 </template>
 
 <script setup>
-import { ref, onMounted, computed } from 'vue';
+import { ref, onMounted, computed, watch } from 'vue';
 import { AlertCircle } from 'lucide-vue-next';
 import { fetchWishlist } from '../api/client';
 import { useAuthStore } from '../stores/authStore';
+import { usePolicyStore } from '../stores/policyStore';
 
 const wishlist = ref([]);
 const loading = ref(false);
 const error = ref('');
 const authStore = useAuthStore();
+const policyStore = usePolicyStore();
 const isLoggedIn = computed(() => authStore.isAuthenticated);
 
 const formatRegion = (policy) => {
@@ -92,5 +94,25 @@ onMounted(() => {
   if (!isLoggedIn.value) return;
   loadWishlist();
 });
+
+watch(
+  () => policyStore.wishlistIds,
+  async (ids) => {
+    const list = Array.isArray(ids) ? ids.map((id) => String(id)) : [];
+    if (!list.length) {
+      wishlist.value = [];
+      return;
+    }
+    if (list.length > wishlist.value.length) {
+      await loadWishlist();
+      return;
+    }
+    wishlist.value = wishlist.value.filter((item) => {
+      const policyId = item?.policy?.id ?? item?.policy_id ?? item?.policy;
+      return list.includes(String(policyId));
+    });
+  },
+  { deep: true }
+);
 </script>
 
