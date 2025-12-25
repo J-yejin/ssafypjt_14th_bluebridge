@@ -110,19 +110,9 @@
 
       <!-- RAG Results -->
       <div v-if="showRagResults || ragLoading" class="mb-12">
-        <div v-if="ragLoading" class="flex items-center gap-3 mb-4">
-          <span class="px-4 py-2 bg-cyan-50 text-cyan-700 rounded-full text-sm shadow-sm loading-badge">검색 중입니다</span>
-        </div>
         <div v-if="showRagResults && ragBasedRecommendations.length > 0">
           <div class="flex items-center gap-3 mb-6">
             <h2 class="text-blue-900 text-3xl">AI 추천 결과</h2>
-            <span
-              v-if="ragLoading"
-              class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-gradient-to-r from-cyan-100 to-blue-100 text-cyan-700 text-sm border border-cyan-200 shadow-sm loading-badge"
-            >
-              <span class="w-2 h-2 rounded-full bg-cyan-500 animate-pulse" />
-              검색 중입니다
-            </span>
           </div>
           <div class="grid lg:grid-cols-2 gap-8">
             <router-link
@@ -147,7 +137,7 @@
                   </div>
                   <button
                     type="button"
-                    class="inline-flex items-center justify-center w-10 h-10 rounded-full border border-cyan-200 text-cyan-700 hover:text-rose-500 hover:border-rose-200 transition bg-white cursor-pointer/70 cursor-pointer"
+                    class="inline-flex items-center justify-center w-10 h-10 rounded-full border border-cyan-200 text-cyan-700 hover:text-rose-500 hover:border-rose-200 transition bg-white/70 cursor-pointer"
                     :class="policyStore.isWishlisted(policy.id) ? 'text-rose-500 border-rose-200 bg-rose-50' : ''"
                     @click.stop.prevent="handleToggleWishlist(policy.id)"
                     aria-label="&#44288;&#49900;&#32;&#51221;&#52293;"
