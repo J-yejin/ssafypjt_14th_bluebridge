@@ -116,7 +116,12 @@
                 aria-label="&#44288;&#49900;&#32;&#51221;&#52293;"
                 title="&#44288;&#49900;&#32;&#51221;&#52293;"
               >
-                <Heart class="w-5 h-5" :fill="policyStore.isWishlisted(policy.id) ? 'currentColor' : 'none'" />
+                <Heart
+                  class="w-5 h-5"
+                  :class="policyStore.isWishlisted(policy.id) ? 'text-rose-500' : ''"
+                  :fill="policyStore.isWishlisted(policy.id) ? '#ef4444' : 'none'"
+                  :stroke="policyStore.isWishlisted(policy.id) ? '#ef4444' : 'currentColor'"
+                />
               </button>
             </div>
           </div>
