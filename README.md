@@ -1,4 +1,4 @@
-# 야무진 청년정책
+# 야무진 정책
 ![메인 화면](screenshots/main_page.PNG)
 ![정책 목록](screenshots/policies_page.PNG)
 
