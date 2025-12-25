@@ -65,7 +65,6 @@
               <span class="col-number">{{ displayNumber(board) }}</span>
               <div class="col-title">
                 <span class="title-text">{{ board.title }}</span>
-                <span class="badge">{{ displayCategory(board.category) }}</span>
               </div>
               <span class="col-author">{{ board.user || '익명' }}</span>
               <span class="col-date">{{ formatDate(board.created_at) }}</span>
