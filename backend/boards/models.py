@@ -27,6 +27,18 @@ class Board(models.Model):
         return self.title
 
 
+class BoardLike(models.Model):
+    board = models.ForeignKey(Board, on_delete=models.CASCADE, related_name="likes")
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="board_likes")
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        unique_together = ("board", "user")
+
+    def __str__(self):
+        return f"{self.user.username} likes {self.board_id}"
+
+
 class Comment(models.Model):
     board = models.ForeignKey(Board, on_delete=models.CASCADE, related_name="comments")
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="comments")
