@@ -110,7 +110,9 @@
         </div>
         <ul>
           <li v-for="item in noticeList" :key="item.id">
-            <span>{{ item.title }}</span>
+            <button type="button" class="board-link" @click="goBoardDetail(item.id)">
+              {{ item.title }}
+            </button>
             <span class="date">{{ formatDate(item.created_at) }}</span>
           </li>
           <li v-if="!noticeList.length" class="empty">등록된 공지사항이 없습니다.</li>
@@ -124,7 +126,9 @@
         </div>
         <ul>
           <li v-for="item in resourceList" :key="item.id">
-            <span>{{ item.title }}</span>
+            <button type="button" class="board-link" @click="goBoardDetail(item.id)">
+              {{ item.title }}
+            </button>
             <span class="date">{{ formatDate(item.created_at) }}</span>
           </li>
           <li v-if="!resourceList.length" class="empty">등록된 자료가 없습니다.</li>
@@ -140,6 +144,7 @@ import { useRouter } from 'vue-router';
 import { usePolicyStore } from '../stores/policyStore';
 import { useAuthStore } from '../stores/authStore';
 import { useBoardStore } from '../stores/boardStore';
+import { fetchWishlist } from '../api/client';
 
 const router = useRouter();
 const policyStore = usePolicyStore();
@@ -156,6 +161,7 @@ const currentMonthString = computed(() => currentMonth.value.toString().padStart
 const weekdays = ['일', '월', '화', '수', '목', '금', '토'];
 
 const cachedPolicies = ref([]);
+const calendarReady = ref(false);
 
 const wishlistPolicies = computed(() =>
   policyStore.policies.filter((p) => policyStore.isWishlisted(p.id))
@@ -203,6 +209,7 @@ const parseDate = (value) => {
 };
 
 const eventsForMonth = computed(() => {
+  if (!calendarReady.value) return [];
   const first = new Date(currentYear.value, currentMonth.value - 1, 1);
   const last = new Date(currentYear.value, currentMonth.value, 0, 23, 59, 59);
   const events = [];
@@ -226,6 +233,7 @@ const eventsForMonth = computed(() => {
 });
 
 const calendarDays = computed(() => {
+  if (!calendarReady.value) return [];
   const daysInMonth = new Date(currentYear.value, currentMonth.value, 0).getDate();
   const firstWeekday = new Date(currentYear.value, currentMonth.value - 1, 1).getDay();
   const cells = [];
@@ -262,7 +270,21 @@ const resourceList = computed(() =>
 );
 
 const goBoardCategory = (cat) => {
+  if (!authStore.isAuthenticated) {
+    alert('로그인이 필요합니다.');
+    router.push('/login');
+    return;
+  }
   router.push({ path: '/boards', query: { category: cat } });
+};
+
+const goBoardDetail = (id) => {
+  if (!authStore.isAuthenticated) {
+    alert('로그인이 필요합니다.');
+    router.push('/login');
+    return;
+  }
+  router.push(`/boards/${id}`);
 };
 
 const formatDate = (value) => {
@@ -271,31 +293,47 @@ const formatDate = (value) => {
 };
 
 onMounted(async () => {
-  // 캘린더 캐시 로드
-  try {
-    const cached = JSON.parse(localStorage.getItem('bb_calendar_cache') || '[]');
-    if (Array.isArray(cached)) cachedPolicies.value = cached;
-  } catch (_) {
-    cachedPolicies.value = [];
-  }
+  cachedPolicies.value = [];
+  calendarReady.value = false;
 
   if (authStore.isAuthenticated) {
-    await policyStore.loadWishlist();
-    const ids = Array.isArray(policyStore.wishlistIds) ? policyStore.wishlistIds : [];
+    // 위시리스트를 직접 불러와 ID와 상세 정책을 채움
+    const fetched = await fetchWishlist();
+    const wishlistData = Array.isArray(fetched) ? fetched : [];
+    const ids = wishlistData
+      .map((item) => item?.policy?.id ?? item?.policy_id ?? item?.policy)
+      .filter((id) => id !== undefined && id !== null)
+      .map((id) => String(id));
+    console.log('[wishlistIds]', ids);
+
+    const loadedPolicies = [];
     for (const id of ids) {
-      await policyStore.loadPolicyById(id);
+      const item = await policyStore.loadPolicyById(id);
+      if (item) loadedPolicies.push(item);
     }
-    const toCache = wishlistPolicies.value.map((p) => ({
+
+    console.table(
+      loadedPolicies.map((p) => ({
+        id: p.id,
+        title: p.title,
+        start: p.startDate,
+        end: p.endDate,
+        rawRange: p.raw?.['신청기간'],
+      }))
+    );
+
+    // 위시리스트 정책을 달력 데이터로 저장
+    cachedPolicies.value = loadedPolicies.map((p) => ({
       title: p.title,
       startDate: p.startDate,
       endDate: p.endDate,
+      raw: p.raw || {},
     }));
-    localStorage.setItem('bb_calendar_cache', JSON.stringify(toCache));
-    cachedPolicies.value = toCache;
   }
 
-  policyStore.loadPolicies({ force: true });
+  await policyStore.loadPolicies({ force: true });
   boardStore.loadBoards();
+  calendarReady.value = true;
 });
 
 const featureCards = [
@@ -330,6 +368,7 @@ const categories = [
   { label: '금융·지원금', icon: '💰', className: 'purple' },
   { label: '기타', icon: '⭐', className: 'gray' },
 ];
+
 </script>
 
 <style scoped>
@@ -790,7 +829,7 @@ const categories = [
   display: grid;
   grid-template-columns: repeat(2, minmax(280px, 1fr));
   gap: 12px;
-  max-width: 920px;
+  max-width: 1200px;
   margin: 0 auto;
   justify-content: center;
 }
@@ -798,8 +837,10 @@ const categories = [
 .list-card {
   padding: 18px;
   display: grid;
+  grid-template-rows: auto 1fr;
   gap: 12px;
   text-align: center;
+  min-height: 160px;
 }
 
 .list-header {
@@ -813,6 +854,31 @@ const categories = [
   font-size: 13px;
   color: #3f8c4f;
   text-decoration: none;
+  cursor: pointer;
+}
+
+.link-btn {
+  font-size: 13px;
+  color: #3f8c4f;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  font-weight: 700;
+}
+
+.board-link {
+  background: transparent;
+  border: none;
+  padding: 0;
+  margin: 0;
+  color: #1f2937;
+  font-size: 14px;
+  cursor: pointer;
+  text-align: left;
+}
+
+.board-link:hover {
+  color: #2f855a;
 }
 
 .list-card ul {
@@ -821,6 +887,7 @@ const categories = [
   margin: 0;
   display: grid;
   gap: 10px;
+  align-content: start;
 }
 
 .list-card li {
@@ -828,6 +895,7 @@ const categories = [
   justify-content: space-between;
   font-size: 14px;
   color: #1f2937;
+  align-items: center;
 }
 
 .tag {

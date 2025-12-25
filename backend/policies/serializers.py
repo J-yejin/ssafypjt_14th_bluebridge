@@ -118,6 +118,7 @@ class PolicyBasicSerializer(serializers.ModelSerializer):
             "source",
             "region_sido",
             "region_sigungu",
+            "start_date",
             "end_date",
             "status",
             "ux_score",
