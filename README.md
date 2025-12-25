@@ -19,7 +19,7 @@
 
 * Backend: Django, Django REST Framework, SQLite
 * Frontend: Vue 3, Pinia, Vite
-* (선택) 벡터 검색: Chroma / pgvector
+* 벡터 검색: pgvector
 
 ---
 
@@ -87,6 +87,7 @@ frontend/vue-project/
 
 * 공지 / 자료 / 자유 게시판
 * 관리자 계정만 공지사항 작성 가능
+* 최신순, 조회순 순으로 정렬 가능
 ![게시판](screenshots/articles.PNG)
 ---
 
@@ -190,8 +191,13 @@ frontend/vue-project/
 ![ERD](screenshots/ERD.png)
 
 ---
+## 7. Diagram
+![Diagram](screenshots/Diagram.jpg)
 
-## 7. 팀 역할
+---
+
+
+## 8. 팀 역할
 
 * **범석**
   인증·프로필, 추천 로직 설계/디버깅, 달력 연동, 데이터 흐름 안정화
@@ -204,7 +210,7 @@ frontend/vue-project/
 
 ---
 
-## 8. 개선 아이디어
+## 9. 개선 아이디어
 
 * 벡터 검색 기반 하이브리드 검색 고도화
 * 마감 임박/신규 정책 알림
