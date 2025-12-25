@@ -20,7 +20,7 @@
       </div>
 
       <!-- 댓글 -->
-      <div class="pt-6 border-t border-gray-100">
+      <div v-if="!isNotice" class="pt-6 border-t border-gray-100">
         <h2 class="text-xl font-semibold text-blue-900 mb-4">댓글</h2>
         <div v-if="sortedComments.length === 0" class="text-gray-500 mb-4">첫 댓글을 남겨주세요.</div>
         <ul class="space-y-4">
@@ -145,6 +145,8 @@ const sortedComments = computed(() => {
   const list = boardStore.current?.comments || [];
   return [...list].sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
 });
+
+const isNotice = computed(() => (boardStore.current?.category || '').toLowerCase() === 'notice');
 
 const load = async () => {
   if (!authStore.isAuthenticated) {
