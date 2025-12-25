@@ -110,7 +110,9 @@
         </div>
         <ul>
           <li v-for="item in noticeList" :key="item.id">
-            <span>{{ item.title }}</span>
+            <button type="button" class="board-link" @click="goBoardDetail(item.id)">
+              {{ item.title }}
+            </button>
             <span class="date">{{ formatDate(item.created_at) }}</span>
           </li>
           <li v-if="!noticeList.length" class="empty">등록된 공지사항이 없습니다.</li>
@@ -124,7 +126,9 @@
         </div>
         <ul>
           <li v-for="item in resourceList" :key="item.id">
-            <span>{{ item.title }}</span>
+            <button type="button" class="board-link" @click="goBoardDetail(item.id)">
+              {{ item.title }}
+            </button>
             <span class="date">{{ formatDate(item.created_at) }}</span>
           </li>
           <li v-if="!resourceList.length" class="empty">등록된 자료가 없습니다.</li>
@@ -262,7 +266,21 @@ const resourceList = computed(() =>
 );
 
 const goBoardCategory = (cat) => {
+  if (!authStore.isAuthenticated) {
+    alert('로그인이 필요합니다.');
+    router.push('/login');
+    return;
+  }
   router.push({ path: '/boards', query: { category: cat } });
+};
+
+const goBoardDetail = (id) => {
+  if (!authStore.isAuthenticated) {
+    alert('로그인이 필요합니다.');
+    router.push('/login');
+    return;
+  }
+  router.push(`/boards/${id}`);
 };
 
 const formatDate = (value) => {
@@ -790,7 +808,7 @@ const categories = [
   display: grid;
   grid-template-columns: repeat(2, minmax(280px, 1fr));
   gap: 12px;
-  max-width: 920px;
+  max-width: 1200px;
   margin: 0 auto;
   justify-content: center;
 }
@@ -798,8 +816,10 @@ const categories = [
 .list-card {
   padding: 18px;
   display: grid;
+  grid-template-rows: auto 1fr;
   gap: 12px;
   text-align: center;
+  min-height: 160px;
 }
 
 .list-header {
@@ -813,6 +833,31 @@ const categories = [
   font-size: 13px;
   color: #3f8c4f;
   text-decoration: none;
+  cursor: pointer;
+}
+
+.link-btn {
+  font-size: 13px;
+  color: #3f8c4f;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  font-weight: 700;
+}
+
+.board-link {
+  background: transparent;
+  border: none;
+  padding: 0;
+  margin: 0;
+  color: #1f2937;
+  font-size: 14px;
+  cursor: pointer;
+  text-align: left;
+}
+
+.board-link:hover {
+  color: #2f855a;
 }
 
 .list-card ul {
@@ -821,6 +866,7 @@ const categories = [
   margin: 0;
   display: grid;
   gap: 10px;
+  align-content: start;
 }
 
 .list-card li {
@@ -828,6 +874,7 @@ const categories = [
   justify-content: space-between;
   font-size: 14px;
   color: #1f2937;
+  align-items: center;
 }
 
 .tag {
