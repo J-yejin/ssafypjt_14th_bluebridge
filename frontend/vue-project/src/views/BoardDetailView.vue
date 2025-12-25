@@ -15,12 +15,12 @@
         </div>
       </div>
 
-      <div class="prose max-w-none text-gray-700 whitespace-pre-line leading-relaxed">
+      <div class="prose max-w-none text-gray-700 whitespace-pre-line leading-relaxed mb-6">
         {{ boardStore.current.content }}
       </div>
 
       <!-- 댓글 -->
-      <div v-if="!isNotice" class="pt-6 border-t border-gray-100">
+      <div v-if="!isNotice" class="pt-10 border-t border-gray-100">
         <h2 class="text-xl font-semibold text-blue-900 mb-4">댓글</h2>
         <div v-if="sortedComments.length === 0" class="text-gray-500 mb-4">첫 댓글을 남겨주세요.</div>
         <ul class="space-y-4">
@@ -99,6 +99,15 @@
                 &#45843;&#44544; &#46321;&#47197;
               </button>
             </div>
+            <div class="flex justify-start mt-6 pt-3 border-t border-gray-100">
+              <button
+                type="button"
+                class="px-5 py-2.5 rounded-lg border border-blue-200 text-blue-700 hover:bg-blue-50 transition cursor-pointer"
+                @click="handleGoBack"
+              >
+                목록으로 돌아가기
+              </button>
+            </div>
           </div>
           <div v-else class="text-gray-500">
             댓글을 작성하려면
@@ -173,6 +182,10 @@ const handleAddComment = async () => {
   } catch (err) {
     alert(err?.message || '댓글 등록에 실패했습니다.');
   }
+};
+
+const handleGoBack = () => {
+  router.back();
 };
 
 const handleToggleLike = async () => {
