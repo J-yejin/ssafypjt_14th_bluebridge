@@ -1,0 +1,17 @@
+# === Django Core ===
+Django==4.2.7
+django-environ==0.10.0
+django-cors-headers==4.3.0
+djangorestframework==3.14.0
+djangorestframework-simplejwt==5.3.1
+
+chromadb==0.4.22            
+numpy>=1.26,<2.0
+
+requests==2.31.0
+
+# === Serialization / Parsing ===
+ujson==5.8.0
+
+# === Security ===
+cryptography==41.0.7
